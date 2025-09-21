@@ -12,9 +12,9 @@ public final class Rack {
 
     public static Rack createFromString(String letters) {
         int length = letters.length();
-        if (length < 8) {
+        if (length > 7) {
             throw new IllegalArgumentException(
-                    "Input string should contain a maximum of 8 letters. Contained " + length + ".");
+                    "Input string should contain a maximum of 7 letters. Containes " + length + ".");
         }
 
         List<Tile> tiles = new ArrayList<>();

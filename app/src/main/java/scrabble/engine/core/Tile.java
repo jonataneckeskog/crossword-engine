@@ -5,10 +5,16 @@ import java.util.Map;
 public final class Tile {
     private final char letter;
     private final int points;
+    private final Character assignedLetter;
 
     private Tile(char letter, int points) {
+        this(letter, points, null);
+    }
+
+    private Tile(char letter, int points, Character assignedLetter) {
         this.letter = letter;
         this.points = points;
+        this.assignedLetter = assignedLetter;
     }
 
     private static final Map<Character, Integer> TILE_POINTS = Map.ofEntries(
@@ -20,19 +26,26 @@ public final class Tile {
             Map.entry('P', 3), Map.entry('Q', 10), Map.entry('R', 1),
             Map.entry('S', 1), Map.entry('T', 1), Map.entry('U', 1),
             Map.entry('V', 4), Map.entry('W', 4), Map.entry('X', 8),
-            Map.entry('Y', 4), Map.entry('Z', 10), Map.entry('_', 0));
+            Map.entry('Y', 4), Map.entry('Z', 10), Map.entry('?', 0));
 
     public static Tile fromChar(char c) {
         char letter = Character.toUpperCase(c);
-        Integer pts = TILE_POINTS.get(letter);
-        if (pts == null) {
-            throw new IllegalArgumentException("Letter '" + c + "' is not valid.");
+        Integer points = TILE_POINTS.get(letter);
+        if (points == null) {
+            throw new IllegalArgumentException("Letter '" + letter + "' is not valid.");
         }
-        return new Tile(letter, pts);
+        return new Tile(letter, points);
+    }
+
+    public Tile assignBlankLetter(char letter) {
+        if (!isBlank()) {
+            throw new IllegalArgumentException("Letter '" + letter + "' is not blank.");
+        }
+        return new Tile('?', TILE_POINTS.get('?'), letter);
     }
 
     public static boolean isValidLetter(char letter) {
-        return TILE_POINTS.containsKey(letter);
+        return TILE_POINTS.containsKey(Character.toUpperCase(letter));
     }
 
     public char getLetter() {
@@ -43,6 +56,14 @@ public final class Tile {
         return points;
     }
 
+    public boolean isBlank() {
+        return letter == '?';
+    }
+
+    public Character getBlankAssignedLetter() {
+        return assignedLetter;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -50,6 +71,12 @@ public final class Tile {
         if (!(o instanceof Tile))
             return false;
         Tile other = (Tile) o;
-        return this.letter == other.letter;
+        return letter == other.letter &&
+                (assignedLetter == null ? other.assignedLetter == null : assignedLetter.equals(other.assignedLetter));
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * Character.hashCode(letter) + (assignedLetter == null ? 0 : assignedLetter.hashCode());
     }
 }

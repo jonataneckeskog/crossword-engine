@@ -23,7 +23,7 @@ public final class Bag {
                 Map.entry('P', 2), Map.entry('Q', 1), Map.entry('R', 6),
                 Map.entry('S', 4), Map.entry('T', 6), Map.entry('U', 4),
                 Map.entry('V', 2), Map.entry('W', 2), Map.entry('X', 1),
-                Map.entry('Y', 2), Map.entry('Z', 1), Map.entry('_', 2));
+                Map.entry('Y', 2), Map.entry('Z', 1), Map.entry('?', 2));
 
         List<Tile> tiles = new ArrayList<>();
 

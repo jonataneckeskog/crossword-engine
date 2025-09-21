@@ -6,7 +6,7 @@ import java.util.ArrayList;
 public final class Rack {
     private final List<Tile> tiles;
 
-    public Rack(List<Tile> tiles) {
+    private Rack(List<Tile> tiles) {
         this.tiles = new ArrayList<>(tiles);
     }
 

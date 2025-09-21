@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class Bag {
     private final List<Tile> tiles;
 
-    public Bag(List<Tile> tiles) {
+    private Bag(List<Tile> tiles) {
         this.tiles = new ArrayList<>(tiles);
     }
 

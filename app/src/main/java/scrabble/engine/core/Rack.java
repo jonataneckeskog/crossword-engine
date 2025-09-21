@@ -31,7 +31,7 @@ public final class Rack {
         return new Rack(tiles);
     }
 
-    public Rack drawTiles(String letters) {
+    public Rack removeTiles(String letters) {
         int length = letters.length();
         if (length > tiles.size()) {
             throw new IllegalArgumentException(
@@ -55,5 +55,17 @@ public final class Rack {
         }
 
         return new Rack(remaining);
+    }
+
+    public Rack addTiles(List<Tile> tiles) {
+        List<Tile> newTiles = new ArrayList<>(this.tiles);
+        newTiles.addAll(tiles);
+
+        if (newTiles.size() > 7)
+            throw new IllegalArgumentException(
+                    "Added too many tiles, rack maximum size is 7 but it would have contained " + newTiles.size()
+                            + " tiles.");
+
+        return new Rack(newTiles);
     }
 }

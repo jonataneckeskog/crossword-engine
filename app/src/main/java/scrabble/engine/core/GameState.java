@@ -36,7 +36,7 @@ public final class GameState {
     }
 
     public int[] getScores() {
-        return scores;
+        return scores.clone();
     }
 
     public int getPlayerTurn() {

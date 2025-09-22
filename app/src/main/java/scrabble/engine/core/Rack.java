@@ -10,7 +10,7 @@ public final class Rack {
     private static final int RACK_SIZE = BoardConstants.RACK_SIZE;
 
     private Rack(List<Tile> tiles) {
-        this.tiles = new ArrayList<>(tiles);
+        this.tiles = tiles;
     }
 
     public static Rack createFromString(String letters) {

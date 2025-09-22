@@ -2,6 +2,7 @@ package scrabble.engine.core;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import scrabble.engine.util.BoardConstants;
 
@@ -71,5 +72,61 @@ public final class Rack {
                             + " tiles.");
 
         return new Rack(newTiles);
+    }
+
+    // Returns an immutable version of tiles.
+    // Since Tile is completely immutable, nothing can be changed.
+    public List<Tile> getTiles() {
+        return Collections.unmodifiableList(tiles);
+    }
+
+    public String letters() {
+        StringBuilder sb = new StringBuilder(tiles.size());
+        for (Tile tile : tiles) {
+            sb.append(tile.letter());
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof Rack))
+            return false;
+        Rack other = (Rack) o;
+
+        if (this.tiles.size() != other.tiles.size())
+            return false;
+
+        List<Tile> otherTilesCopy = new ArrayList<>(other.tiles);
+        for (Tile tile : this.tiles) {
+            if (!otherTilesCopy.remove(tile)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        for (Tile tile : tiles) {
+            hash += tile.hashCode();
+        }
+        return hash;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Rack[");
+        for (int i = 0; i < tiles.size(); i++) {
+            sb.append(tiles.get(i).letter());
+            if (i < tiles.size() - 1)
+                sb.append(", ");
+        }
+        sb.append("]");
+        return sb.toString();
     }
 }

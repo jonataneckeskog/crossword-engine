@@ -74,6 +74,14 @@ public final class Rack {
         return new Rack(newTiles);
     }
 
+    public int size() {
+        return tiles.size();
+    }
+
+    public boolean isEmpty() {
+        return tiles.isEmpty();
+    }
+
     // Returns an immutable version of tiles.
     // Since Tile is completely immutable, nothing can be changed.
     public List<Tile> getTiles() {

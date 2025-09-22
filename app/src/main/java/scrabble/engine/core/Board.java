@@ -1,13 +1,14 @@
 package scrabble.engine.core;
 
 import java.util.Map;
+import scrabble.engine.util.BoardConstants;
 
 public final class Board {
     private final Tile[] board;
     private final byte[] tileBonuses;
 
     private Board(Tile[] board) {
-        this(board, SCRABBLE_BOARD);
+        this(board, BoardConstants.SCRABBLE_BOARD);
     }
 
     private Board(Tile[] board, byte[] tileBonuses) {
@@ -15,67 +16,9 @@ public final class Board {
         this.tileBonuses = tileBonuses;
     }
 
-    public static final int SIZE = 15;
-    private static final int TOTAL_SIZE = SIZE * SIZE;
-
-    private static final byte NORMAL = 0;
-    private static final byte DOUBLE_LETTER = 1;
-    private static final byte TRIPLE_LETTER = 2;
-    private static final byte DOUBLE_WORD = 3;
-    private static final byte TRIPLE_WORD = 4;
-
-    // Standard 15 x 15 Scrabble board
-    private static final byte[] SCRABBLE_BOARD = {
-            // Row 0
-            TRIPLE_WORD, NORMAL, NORMAL, DOUBLE_LETTER, NORMAL, NORMAL, NORMAL, TRIPLE_WORD, NORMAL, NORMAL, NORMAL,
-            DOUBLE_LETTER, NORMAL, NORMAL, TRIPLE_WORD,
-            // Row 1
-            NORMAL, DOUBLE_WORD, NORMAL, NORMAL, NORMAL, TRIPLE_LETTER, NORMAL, NORMAL, NORMAL, TRIPLE_LETTER, NORMAL,
-            NORMAL, NORMAL, DOUBLE_WORD, NORMAL,
-            // Row 2
-            NORMAL, NORMAL, DOUBLE_WORD, NORMAL, NORMAL, NORMAL, DOUBLE_LETTER, NORMAL, DOUBLE_LETTER, NORMAL, NORMAL,
-            NORMAL, DOUBLE_WORD, NORMAL, NORMAL,
-            // Row 3
-            DOUBLE_LETTER, NORMAL, NORMAL, DOUBLE_WORD, NORMAL, NORMAL, NORMAL, DOUBLE_LETTER, NORMAL, NORMAL, NORMAL,
-            DOUBLE_WORD, NORMAL, NORMAL, DOUBLE_LETTER,
-            // Row 4
-            NORMAL, NORMAL, NORMAL, NORMAL, DOUBLE_WORD, NORMAL, NORMAL, NORMAL, NORMAL, NORMAL, DOUBLE_WORD, NORMAL,
-            NORMAL, NORMAL, NORMAL,
-            // Row 5
-            NORMAL, TRIPLE_LETTER, NORMAL, NORMAL, NORMAL, TRIPLE_LETTER, NORMAL, NORMAL, NORMAL, TRIPLE_LETTER, NORMAL,
-            NORMAL, NORMAL, TRIPLE_LETTER, NORMAL,
-            // Row 6
-            NORMAL, NORMAL, DOUBLE_LETTER, NORMAL, NORMAL, NORMAL, DOUBLE_LETTER, NORMAL, DOUBLE_LETTER, NORMAL, NORMAL,
-            NORMAL, DOUBLE_LETTER, NORMAL, NORMAL,
-            // Row 7
-            TRIPLE_WORD, NORMAL, NORMAL, DOUBLE_LETTER, NORMAL, NORMAL, NORMAL, DOUBLE_WORD, NORMAL, NORMAL, NORMAL,
-            DOUBLE_LETTER, NORMAL, NORMAL, TRIPLE_WORD,
-            // Row 8
-            NORMAL, NORMAL, DOUBLE_LETTER, NORMAL, NORMAL, NORMAL, DOUBLE_LETTER, NORMAL, DOUBLE_LETTER, NORMAL, NORMAL,
-            NORMAL, DOUBLE_LETTER, NORMAL, NORMAL,
-            // Row 9
-            NORMAL, TRIPLE_LETTER, NORMAL, NORMAL, NORMAL, TRIPLE_LETTER, NORMAL, NORMAL, NORMAL, TRIPLE_LETTER, NORMAL,
-            NORMAL, NORMAL, TRIPLE_LETTER, NORMAL,
-            // Row 10
-            NORMAL, NORMAL, NORMAL, NORMAL, DOUBLE_WORD, NORMAL, NORMAL, NORMAL, NORMAL, NORMAL, DOUBLE_WORD, NORMAL,
-            NORMAL, NORMAL, NORMAL,
-            // Row 11
-            DOUBLE_LETTER, NORMAL, NORMAL, DOUBLE_WORD, NORMAL, NORMAL, NORMAL, DOUBLE_LETTER, NORMAL, NORMAL, NORMAL,
-            DOUBLE_WORD, NORMAL, NORMAL, DOUBLE_LETTER,
-            // Row 12
-            NORMAL, NORMAL, DOUBLE_WORD, NORMAL, NORMAL, NORMAL, DOUBLE_LETTER, NORMAL, DOUBLE_LETTER, NORMAL, NORMAL,
-            NORMAL, DOUBLE_WORD, NORMAL, NORMAL,
-            // Row 13
-            NORMAL, DOUBLE_WORD, NORMAL, NORMAL, NORMAL, TRIPLE_LETTER, NORMAL, NORMAL, NORMAL, TRIPLE_LETTER, NORMAL,
-            NORMAL, NORMAL, DOUBLE_WORD, NORMAL,
-            // Row 14
-            TRIPLE_WORD, NORMAL, NORMAL, DOUBLE_LETTER, NORMAL, NORMAL, NORMAL, TRIPLE_WORD, NORMAL, NORMAL, NORMAL,
-            DOUBLE_LETTER, NORMAL, NORMAL, TRIPLE_WORD
-    };
-
     public static Board emptyBoard() {
-        Tile[] tiles = new Tile[TOTAL_SIZE];
-        for (int i = 0; i < TOTAL_SIZE; i++) {
+        Tile[] tiles = new Tile[BoardConstants.TOTAL_SIZE];
+        for (int i = 0; i < BoardConstants.TOTAL_SIZE; i++) {
             tiles[i] = null;
         }
 
@@ -108,8 +51,8 @@ public final class Board {
         Position startPosition = findWordStartingPosition(newBoard, letterPlacemensMap.keySet().iterator().next(),
                 reverseStep);
         totalScore += scoreWord(newBoard, letterPlacemensMap, startPosition, step);
-        if (letterPlacemensMap.size() == 7)
-            totalScore += 50; // Bingo!!!
+        if (letterPlacemensMap.size() == BoardConstants.RACK_SIZE)
+            totalScore += BoardConstants.BINGO_BONUS; // Bingo!!!
 
         // Score hooked words on placed tiles
         for (Map.Entry<Position, Tile> entry : letterPlacemensMap.entrySet()) {
@@ -140,12 +83,12 @@ public final class Board {
 
             if (letterPlacementsMap.containsKey(currentPosition)) {
                 switch (tileBonuses[currentPosition.toIndex()]) {
-                    case NORMAL -> {
+                    case BoardConstants.NORMAL -> {
                     }
-                    case DOUBLE_LETTER -> tileScore *= 2;
-                    case TRIPLE_LETTER -> tileScore *= 3;
-                    case DOUBLE_WORD -> multiplier *= 2;
-                    case TRIPLE_WORD -> multiplier *= 3;
+                    case BoardConstants.DOUBLE_LETTER -> tileScore *= 2;
+                    case BoardConstants.TRIPLE_LETTER -> tileScore *= 3;
+                    case BoardConstants.DOUBLE_WORD -> multiplier *= 2;
+                    case BoardConstants.TRIPLE_WORD -> multiplier *= 3;
                     default -> throw new IllegalArgumentException(
                             "This tile contains the unknown bonus value '" + tileBonuses[currentPosition.toIndex()]
                                     + "'.");

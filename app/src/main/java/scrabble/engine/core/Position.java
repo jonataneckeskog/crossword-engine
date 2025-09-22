@@ -2,8 +2,10 @@ package scrabble.engine.core;
 
 import java.util.function.UnaryOperator;
 
+import scrabble.engine.util.BoardConstants;
+
 public record Position(int row, int column) {
-    public static final int SIZE = Board.SIZE;
+    private static final int SIZE = BoardConstants.SIZE;
 
     public Position {
         if (!isInBounds()) {

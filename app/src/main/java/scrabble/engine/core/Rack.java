@@ -3,8 +3,11 @@ package scrabble.engine.core;
 import java.util.List;
 import java.util.ArrayList;
 
+import scrabble.engine.util.BoardConstants;
+
 public final class Rack {
     private final List<Tile> tiles;
+    private static final int RACK_SIZE = BoardConstants.RACK_SIZE;
 
     private Rack(List<Tile> tiles) {
         this.tiles = new ArrayList<>(tiles);
@@ -12,9 +15,9 @@ public final class Rack {
 
     public static Rack createFromString(String letters) {
         int length = letters.length();
-        if (length > 7) {
+        if (length > RACK_SIZE) {
             throw new IllegalArgumentException(
-                    "Input string should contain a maximum of 7 letters. Containes " + length + ".");
+                    "Input string should contain a maximum of " + RACK_SIZE + " letters. Containes " + length + ".");
         }
 
         List<Tile> tiles = new ArrayList<>();
@@ -61,9 +64,10 @@ public final class Rack {
         List<Tile> newTiles = new ArrayList<>(this.tiles);
         newTiles.addAll(tiles);
 
-        if (newTiles.size() > 7)
+        if (newTiles.size() > RACK_SIZE)
             throw new IllegalArgumentException(
-                    "Added too many tiles, rack maximum size is 7 but it would have contained " + newTiles.size()
+                    "Added too many tiles, rack maximum size is " + RACK_SIZE + " but it would have contained "
+                            + newTiles.size()
                             + " tiles.");
 
         return new Rack(newTiles);

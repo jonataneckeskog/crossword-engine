@@ -7,15 +7,11 @@ public sealed interface Tile permits LetterTile, BlankTile {
 
     boolean isBlank();
 
-    public static LetterTile createTile(char letter, int points) {
+    public static LetterTile createLetter(char letter, int points) {
         return LetterTile.of(letter, points);
     }
 
-    public static BlankTile createBlank() {
-        return BlankTile.unassigned();
-    }
-
-    public static BlankTile createAssigned(char letter) {
-        return BlankTile.assigned(letter);
+    public static BlankTile createBlank(char letter) {
+        return BlankTile.of(letter);
     }
 }

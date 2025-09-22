@@ -4,22 +4,14 @@ import scrabble.engine.util.BoardConstants;
 
 public final class BlankTile implements Tile {
     private final char letter;
-    private final int points = BoardConstants.TILE_POINTS.get('?');
+    private final int points;
 
-    private BlankTile() {
-        letter = '?';
+    private BlankTile(char assignedLetter) {
+        this.letter = assignedLetter;
+        this.points = BoardConstants.TILE_POINTS.getOrDefault('?', 0);
     }
 
-    private BlankTile(Character assignedLetter) {
-        char letter = Character.toUpperCase(assignedLetter);
-        this.letter = letter;
-    }
-
-    public static BlankTile unassigned() {
-        return new BlankTile();
-    }
-
-    public static BlankTile assigned(char letter) {
+    public static BlankTile of(char letter) {
         return new BlankTile(letter);
     }
 
@@ -40,6 +32,21 @@ public final class BlankTile implements Tile {
     @Override
     public boolean isBlank() {
         return true;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof BlankTile))
+            return false;
+        BlankTile that = (BlankTile) o;
+        return this.letter == that.letter && this.points == that.points;
+    }
+
+    @Override
+    public int hashCode() {
+        return Character.hashCode(letter) * 31 + Integer.hashCode(points);
     }
 
 }

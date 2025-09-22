@@ -27,4 +27,19 @@ public final class LetterTile implements Tile {
     public boolean isBlank() {
         return false;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof LetterTile))
+            return false;
+        LetterTile that = (LetterTile) o;
+        return letter == that.letter && points == that.points;
+    }
+
+    @Override
+    public int hashCode() {
+        return Character.hashCode(letter) * 31 + Integer.hashCode(points);
+    }
 }

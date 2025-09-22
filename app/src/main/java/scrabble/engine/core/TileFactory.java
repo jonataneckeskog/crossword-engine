@@ -11,18 +11,20 @@ public final class TileFactory {
     }
 
     public static final Map<Character, Tile> TILE_POOL;
-    public static final Map<Character, Tile> BLANK_POOL;
+    public static final Map<Character, BlankTile> BLANK_POOL;
 
     static {
         Map<Character, Tile> tempTilePool = new HashMap<>();
-        Map<Character, Tile> tempBlankPool = new HashMap<>();
+        Map<Character, BlankTile> tempBlankPool = new HashMap<>();
 
         for (var entry : BoardConstants.TILE_POINTS.entrySet()) {
             char letter = entry.getKey();
-            tempTilePool.put(letter, Tile.createTile(letter, entry.getValue()));
 
-            if (letter != '?') {
-                tempBlankPool.put(letter, Tile.createAssigned(letter));
+            if (letter == '?') {
+                tempTilePool.put(letter, Tile.createBlank(letter));
+            } else {
+                tempTilePool.put(letter, Tile.createLetter(letter, entry.getValue()));
+                tempBlankPool.put(letter, Tile.createBlank(letter));
             }
         }
 
@@ -31,16 +33,16 @@ public final class TileFactory {
     }
 
     public static boolean isValidLetter(char letter) {
-        return BoardConstants.TILE_POINTS.containsKey(letter);
+        return BoardConstants.TILE_POINTS.containsKey(Character.toUpperCase(letter));
     }
 
     // Can return an unassigned blank
-    public static Tile getTile(char letter) {
-        return TILE_POOL.get(letter);
+    public static Tile getLetterTile(char letter) {
+        return TILE_POOL.get(Character.toUpperCase(letter));
     }
 
     // Returns assigned blanks
     public static Tile getBlank(char letter) {
-        return BLANK_POOL.get(letter);
+        return BLANK_POOL.get(Character.toUpperCase(letter));
     }
 }

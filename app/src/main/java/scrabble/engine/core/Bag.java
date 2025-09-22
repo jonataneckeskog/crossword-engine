@@ -21,7 +21,7 @@ public final class Bag {
             int count = entry.getValue();
 
             for (int i = 0; i < count; i++) {
-                tiles.add(TileFactory.getTile(letter));
+                tiles.add(TileFactory.getLetterTile(letter));
             }
         }
 
@@ -44,7 +44,7 @@ public final class Bag {
                 throw new IllegalArgumentException("String contains invalid character '" + letter + "'");
             }
 
-            tiles.add(TileFactory.getTile(letter));
+            tiles.add(TileFactory.getLetterTile(letter));
         }
 
         return new Bag(tiles);

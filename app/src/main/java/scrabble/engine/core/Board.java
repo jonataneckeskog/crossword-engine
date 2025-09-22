@@ -45,7 +45,7 @@ public final class Board {
         for (Map.Entry<Position, Tile> entry : letterPlacemensMap.entrySet()) {
             if (!Board.isEmpty(newBoard, entry.getKey()))
                 throw new IllegalArgumentException(
-                        "Tried to place tile '" + entry.getValue().getLetter() + "' at an invalid square.");
+                        "Tried to place tile '" + entry.getValue().letter() + "' at an invalid square.");
             newBoard[entry.getKey().toIndex()] = entry.getValue();
         }
         Position startPosition = findWordStartingPosition(newBoard, letterPlacemensMap.keySet().iterator().next(),
@@ -79,7 +79,7 @@ public final class Board {
         Position currentPosition = startPosition;
         while (!Board.isEmpty(board, currentPosition)) {
             int tileScore = 0;
-            tileScore += board[currentPosition.toIndex()].getPoints();
+            tileScore += board[currentPosition.toIndex()].points();
 
             if (letterPlacementsMap.containsKey(currentPosition)) {
                 switch (tileBonuses[currentPosition.toIndex()]) {

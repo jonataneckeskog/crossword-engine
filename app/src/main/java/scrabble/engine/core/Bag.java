@@ -10,7 +10,7 @@ public final class Bag {
     private final List<Tile> tiles;
 
     private Bag(List<Tile> tiles) {
-        this.tiles = new ArrayList<>(tiles);
+        this.tiles = tiles;
     }
 
     public static Bag standardBag() {
@@ -21,7 +21,7 @@ public final class Bag {
             int count = entry.getValue();
 
             for (int i = 0; i < count; i++) {
-                tiles.add(Tile.fromChar(letter));
+                tiles.add(TileFactory.getTile(letter));
             }
         }
 
@@ -40,11 +40,11 @@ public final class Bag {
 
         for (int i = 0; i < length; i++) {
             char letter = letters.charAt(i);
-            if (!Tile.isValidLetter(letter)) {
+            if (!TileFactory.isValidLetter(letter)) {
                 throw new IllegalArgumentException("String contains invalid character '" + letter + "'");
             }
 
-            tiles.add(Tile.fromChar(letter));
+            tiles.add(TileFactory.getTile(letter));
         }
 
         return new Bag(tiles);

@@ -24,11 +24,11 @@ public final class Rack {
 
         for (int i = 0; i < length; i++) {
             char letter = letters.charAt(i);
-            if (!Tile.isValidLetter(letter)) {
+            if (!TileFactory.isValidLetter(letter)) {
                 throw new IllegalArgumentException("String contains invalid character '" + letter + "'");
             }
 
-            tiles.add(Tile.fromChar(letter));
+            tiles.add(TileFactory.getTile(letter));
         }
 
         return new Rack(tiles);
@@ -45,11 +45,11 @@ public final class Rack {
 
         for (int i = 0; i < length; i++) {
             char letter = letters.charAt(i);
-            if (!Tile.isValidLetter(letter)) {
+            if (!TileFactory.isValidLetter(letter)) {
                 throw new IllegalArgumentException("String contains invalid character '" + letter + "'");
             }
 
-            Tile tile = Tile.fromChar(letter);
+            Tile tile = TileFactory.getTile(letter);
 
             boolean removed = remaining.remove(tile);
             if (!removed) {

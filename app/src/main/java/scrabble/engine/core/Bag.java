@@ -1,6 +1,7 @@
 package scrabble.engine.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -21,7 +22,7 @@ public final class Bag {
             int count = entry.getValue();
 
             for (int i = 0; i < count; i++) {
-                tiles.add(TileFactory.getLetterTile(letter));
+                tiles.add(TileFactory.getTile(letter));
             }
         }
 
@@ -44,7 +45,7 @@ public final class Bag {
                 throw new IllegalArgumentException("String contains invalid character '" + letter + "'");
             }
 
-            tiles.add(TileFactory.getLetterTile(letter));
+            tiles.add(TileFactory.getTile(letter));
         }
 
         return new Bag(tiles);
@@ -56,6 +57,18 @@ public final class Bag {
 
     public boolean isEmpty() {
         return tiles.isEmpty();
+    }
+
+    public List<Tile> getTiles() {
+        return Collections.unmodifiableList(tiles);
+    }
+
+    public String letters() {
+        StringBuilder sb = new StringBuilder(tiles.size());
+        for (Tile tile : tiles) {
+            sb.append(tile.letter());
+        }
+        return sb.toString();
     }
 
     public DrawResult drawTiles(int numberOfTiles) {
@@ -73,5 +86,47 @@ public final class Bag {
         }
 
         return new DrawResult(new Bag(remaining), drawn);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof Bag))
+            return false;
+        Bag other = (Bag) o;
+
+        if (this.tiles.size() != other.tiles.size())
+            return false;
+
+        List<Tile> otherTilesCopy = new ArrayList<>(other.tiles);
+        for (Tile tile : this.tiles) {
+            if (!otherTilesCopy.remove(tile)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        for (Tile tile : tiles) {
+            hash += tile.hashCode();
+        }
+        return hash;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Bag[");
+        for (int i = 0; i < tiles.size(); i++) {
+            sb.append(tiles.get(i).letter());
+            if (i < tiles.size() - 1)
+                sb.append(", ");
+        }
+        sb.append("]");
+        return sb.toString();
     }
 }

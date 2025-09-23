@@ -37,7 +37,7 @@ public final class TileFactory {
     }
 
     // Can return an unassigned blank
-    public static Tile getLetterTile(char letter) {
+    public static Tile getTile(char letter) {
         return TILE_POOL.get(Character.toUpperCase(letter));
     }
 

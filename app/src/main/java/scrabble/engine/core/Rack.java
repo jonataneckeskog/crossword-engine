@@ -29,7 +29,7 @@ public final class Rack {
                 throw new IllegalArgumentException("String contains invalid character '" + letter + "'");
             }
 
-            tiles.add(TileFactory.getLetterTile(letter));
+            tiles.add(TileFactory.getTile(letter));
         }
 
         return new Rack(tiles);
@@ -50,7 +50,7 @@ public final class Rack {
                 throw new IllegalArgumentException("String contains invalid character '" + letter + "'");
             }
 
-            Tile tile = TileFactory.getLetterTile(letter);
+            Tile tile = TileFactory.getTile(letter);
 
             boolean removed = remaining.remove(tile);
             if (!removed) {

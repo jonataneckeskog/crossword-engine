@@ -14,6 +14,10 @@ public final class Rack {
         this.tiles = tiles;
     }
 
+    public static Rack emptyRack() {
+        return new Rack(new ArrayList<>());
+    }
+
     public static Rack createFromString(String letters) {
         int length = letters.length();
         if (length > RACK_SIZE) {
@@ -33,6 +37,12 @@ public final class Rack {
         }
 
         return new Rack(tiles);
+    }
+
+    public DrawHandler drawFrom(Bag bag) {
+        int numberOfTiles = bag.size() < RACK_SIZE - size() ? bag.size() : RACK_SIZE - size();
+        DrawResult drawResult = bag.drawTiles(numberOfTiles);
+        return new DrawHandler(drawResult.bag(), addTiles(drawResult.drawnTiles()));
     }
 
     public Rack removeTiles(String letters) {

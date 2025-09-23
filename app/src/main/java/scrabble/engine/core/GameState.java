@@ -37,10 +37,19 @@ public final class GameState {
     }
 
     public GameState applyMove(Move move) {
-        // Handle the Move on the board
-        // Drawn new tiles to the rack
-        // Update player turn
-        return this;
+        PlacementResult makeMove = board.placeWord(move);
+        Board newBoard = makeMove.board();
+        int[] newScores = scores.clone();
+        newScores[playerTurn] += makeMove.score();
+
+        DrawHandler makeDraw = racks[playerTurn].drawFrom(bag);
+        Bag newBag = makeDraw.bag();
+        Rack[] newRacks = racks.clone();
+        newRacks[playerTurn] = makeDraw.rack();
+
+        int newPlayerTurn = playerTurn == 0 ? 1 : 0;
+
+        return new GameState(newBoard, newBag, newRacks, newScores, newPlayerTurn);
     }
 
     // Getters
@@ -52,8 +61,8 @@ public final class GameState {
         return bag;
     }
 
-    public Rack[] getRack() {
-        return racks;
+    public Rack[] getRacks() {
+        return racks.clone();
     }
 
     public int[] getScores() {

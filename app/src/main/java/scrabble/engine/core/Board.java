@@ -3,6 +3,7 @@ package scrabble.engine.core;
 import java.util.Arrays;
 import java.util.Map;
 import scrabble.engine.util.BoardConstants;
+import scrabble.engine.core.Position.Step;
 
 public final class Board {
     private final Tile[] board;
@@ -55,14 +56,17 @@ public final class Board {
         return board[position.toIndex()];
     }
 
-    public PlacementResult placeWord(Map<Position, Tile> letterPlacemensMap, Position.Step step) {
+    public PlacementResult placeWord(Move move) {
+        Map<Position, Tile> letterPlacemensMap = move.getTilePlacemenetMap();
+        Step step = move.getStep();
+
         if (letterPlacemensMap.size() == 0) {
             throw new IllegalArgumentException("To place a word, there must exist tiles to be placed.");
         }
 
-        Position.Step reverseStep = Position.Step.reverseStep(step);
-        Position.Step otherStep = Position.Step.otherStep(step);
-        Position.Step reverseOtherStep = Position.Step.reverseStep(otherStep);
+        Step reverseStep = Step.reverseStep(step);
+        Step otherStep = Step.otherStep(step);
+        Step reverseOtherStep = Step.reverseStep(otherStep);
 
         Tile[] newBoard = board.clone();
         int totalScore = 0;

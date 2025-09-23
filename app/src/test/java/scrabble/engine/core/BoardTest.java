@@ -43,7 +43,7 @@ public class BoardTest {
         Map<Position, Tile> move = new HashMap<>();
         move.put(position, tile);
 
-        board.placeWord(move, Position.Step.DOWN);
+        board.placeWord(new Move(move));
     }
 
     @Test
@@ -54,13 +54,13 @@ public class BoardTest {
         move1.put(new Position(3, 2), TileFactory.getTile('a'));
         move1.put(new Position(4, 2), TileFactory.getTile('t'));
 
-        Board newBoard = board.placeWord(move1, Position.Step.DOWN).board();
+        Board newBoard = board.placeWord(new Move(move1)).board();
 
         Map<Position, Tile> move2 = new HashMap<>();
         move2.put(new Position(2, 3), TileFactory.getTile('l'));
         move2.put(new Position(3, 3), TileFactory.getTile('a'));
 
-        PlacementResult placementResult = newBoard.placeWord(move2, Position.Step.DOWN);
+        PlacementResult placementResult = newBoard.placeWord(new Move(move2));
 
         int expectedScore = 2 + 2 * 2 + 2 * 2; // IMPORTANT: Only correct for a normal scrabble board using english
                                                // tiles
@@ -74,7 +74,7 @@ public class BoardTest {
         Tile a = TileFactory.getTile('a');
 
         Map<Position, Tile> move = Map.of(pos, a);
-        PlacementResult result = board.placeWord(move, Position.Step.RIGHT);
+        PlacementResult result = board.placeWord(new Move(move));
 
         assertEquals(a, result.board().tileAt(pos));
 
@@ -90,7 +90,7 @@ public class BoardTest {
         move.put(new Position(2, 3), TileFactory.getTile('a'));
         move.put(new Position(2, 4), TileFactory.getTile('t'));
 
-        PlacementResult result = board.placeWord(move, Position.Step.RIGHT);
+        PlacementResult result = board.placeWord(new Move(move));
 
         assertEquals(TileFactory.getTile('c'), result.board().tileAt(new Position(2, 2)));
         assertEquals(TileFactory.getTile('a'), result.board().tileAt(new Position(2, 3)));
@@ -107,7 +107,7 @@ public class BoardTest {
         move.put(new Position(3, 2), TileFactory.getTile('a'));
         move.put(new Position(4, 2), TileFactory.getTile('t'));
 
-        PlacementResult result = board.placeWord(move, Position.Step.DOWN);
+        PlacementResult result = board.placeWord(new Move(move));
 
         assertEquals(TileFactory.getTile('a'), result.board().tileAt(new Position(3, 2)));
         assertTrue(result.score() > 0);
@@ -120,10 +120,10 @@ public class BoardTest {
                 new Position(2, 2), TileFactory.getTile('c'),
                 new Position(2, 3), TileFactory.getTile('a'),
                 new Position(2, 4), TileFactory.getTile('t'));
-        PlacementResult result1 = board.placeWord(move1, Position.Step.RIGHT);
+        PlacementResult result1 = board.placeWord(new Move(move1));
 
         Map<Position, Tile> move2 = Map.of(new Position(1, 4), TileFactory.getTile('a'));
-        PlacementResult result2 = result1.board().placeWord(move2, Position.Step.DOWN);
+        PlacementResult result2 = result1.board().placeWord(new Move(move2));
 
         assertEquals(TileFactory.getTile('a'), result2.board().tileAt(new Position(1, 4)));
         assertTrue(result2.score() > 0, "Hook word should add score");
@@ -138,7 +138,7 @@ public class BoardTest {
             move.put(new Position(2, 2 + i), TileFactory.getTile(word[i]));
         }
 
-        PlacementResult result = board.placeWord(move, Position.Step.RIGHT);
+        PlacementResult result = board.placeWord(new Move(move));
 
         assertTrue(result.score() >= BoardConstants.BINGO_BONUS,
                 "Bingo should include at least 50 bonus points");
@@ -149,11 +149,11 @@ public class BoardTest {
         Board board = Board.emptyBoard();
         Position pos = new Position(2, 2);
         Map<Position, Tile> move1 = Map.of(pos, TileFactory.getTile('a'));
-        PlacementResult result = board.placeWord(move1, Position.Step.RIGHT);
+        PlacementResult result = board.placeWord(new Move(move1));
 
         // Try placing another tile on the same square
         Map<Position, Tile> move2 = Map.of(pos, TileFactory.getTile('b'));
-        assertThrows(IllegalArgumentException.class, () -> result.board().placeWord(move2, Position.Step.RIGHT));
+        assertThrows(IllegalArgumentException.class, () -> result.board().placeWord(new Move(move2)));
     }
 
     @Test
@@ -161,6 +161,6 @@ public class BoardTest {
         Board board = Board.emptyBoard();
         Map<Position, Tile> emptyMove = Map.of();
 
-        assertThrows(IllegalArgumentException.class, () -> board.placeWord(emptyMove, Position.Step.RIGHT));
+        assertThrows(IllegalArgumentException.class, () -> board.placeWord(new Move(emptyMove)));
     }
 }

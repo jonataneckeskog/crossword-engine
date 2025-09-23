@@ -7,9 +7,11 @@ import java.util.Iterator;
 
 public class Move {
     private Map<Position, Tile> tilePlacementMap;
+    private Step step;
 
-    public Move() {
-
+    public Move(Map<Position, Tile> tilePlacementMap) {
+        this.tilePlacementMap = tilePlacementMap;
+        this.step = stepFromMap();
     }
 
     private Step stepFromMap() {
@@ -34,6 +36,6 @@ public class Move {
     }
 
     public Step getStep() {
-        return stepFromMap();
+        return step;
     }
 }

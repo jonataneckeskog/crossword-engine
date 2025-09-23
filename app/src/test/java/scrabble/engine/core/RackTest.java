@@ -16,9 +16,9 @@ public class RackTest {
     private final static String RACK_STRING_4 = "--42!--";
     private final static String RACK_STRING_5 = "";
 
-    private final static Tile TILE_1 = TileFactory.getLetterTile('a');
-    private final static Tile TILE_2 = TileFactory.getLetterTile('b');
-    private final static Tile TILE_3 = TileFactory.getLetterTile('x');
+    private final static Tile TILE_1 = TileFactory.getTile('a');
+    private final static Tile TILE_2 = TileFactory.getTile('b');
+    private final static Tile TILE_3 = TileFactory.getTile('x');
 
     @Test
     void testCreateFromString() {

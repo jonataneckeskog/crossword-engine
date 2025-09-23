@@ -42,7 +42,7 @@ class TileFactoryTest {
     @MethodSource("validLetterProvider")
     void testGetTile(Map.Entry<Character, Integer> entry) {
         char letter = entry.getKey();
-        Tile tile = TileFactory.getLetterTile(letter);
+        Tile tile = TileFactory.getTile(letter);
         assertNotNull(tile, "Tile should not be null for letter: " + letter);
         assertEquals(letter, tile.letter());
         assertEquals(entry.getValue(), tile.points());

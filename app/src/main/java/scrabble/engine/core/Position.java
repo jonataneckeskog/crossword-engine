@@ -8,7 +8,7 @@ public record Position(int row, int column) {
     private static final int SIZE = BoardConstants.SIZE;
 
     public Position {
-        if (!isInBounds()) {
+        if (row < 0 || row >= SIZE || column < 0 || column >= SIZE) {
             throw new IllegalArgumentException(
                     "Position " + row + "/" + column + " (row/column) is out of bounds for length " + SIZE);
         }

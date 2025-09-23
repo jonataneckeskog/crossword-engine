@@ -1,25 +1,43 @@
 package scrabble.engine.core;
 
+import java.util.Arrays;
 import java.util.Map;
 import scrabble.engine.util.BoardConstants;
 
 public final class Board {
     private final Tile[] board;
-    private final byte[] tileBonuses;
+    private final byte[] tileBonuses = BoardConstants.SCRABBLE_BOARD;
 
     private Board(Tile[] board) {
-        this(board, BoardConstants.SCRABBLE_BOARD);
-    }
-
-    private Board(Tile[] board, byte[] tileBonuses) {
         this.board = board;
-        this.tileBonuses = tileBonuses;
     }
 
     public static Board emptyBoard() {
         Tile[] tiles = new Tile[BoardConstants.TOTAL_SIZE];
-        for (int i = 0; i < BoardConstants.TOTAL_SIZE; i++) {
-            tiles[i] = null;
+        return new Board(tiles); // All tiles automatically get assigned to null
+    }
+
+    public static Board fromString(String boardString) {
+        int totalSize = BoardConstants.TOTAL_SIZE;
+
+        if (boardString.length() != totalSize)
+            throw new IllegalArgumentException(
+                    "Input string should be " + totalSize + " characters long. Is " + boardString.length());
+
+        Tile[] tiles = new Tile[totalSize];
+        for (int i = 0; i < totalSize; i++) {
+            char letter = boardString.charAt(i);
+
+            if (letter == '-') { // '-' is wildcard for empty square
+                tiles[i] = null;
+                continue;
+            }
+
+            if (!TileFactory.isValidLetter(letter)) {
+                throw new IllegalArgumentException("Symbol " + letter + " is not a valid letter.");
+            }
+
+            tiles[i] = TileFactory.getTile(letter);
         }
 
         return new Board(tiles);
@@ -27,6 +45,14 @@ public final class Board {
 
     private static boolean isEmpty(Tile[] board, Position position) {
         return position == null || board[position.toIndex()] == null;
+    }
+
+    public Tile tileAt(int index) {
+        return board[index];
+    }
+
+    public Tile tileAt(Position position) {
+        return board[position.toIndex()];
     }
 
     public PlacementResult placeWord(Map<Position, Tile> letterPlacemensMap, Position.Step step) {
@@ -112,7 +138,7 @@ public final class Board {
         Position currentPosition = tryStep(previousPosition, step);
         while (!Board.isEmpty(board, currentPosition)) {
             previousPosition = currentPosition;
-            currentPosition = tryStep(previousPosition, step);
+            currentPosition = tryStep(currentPosition, step);
         }
 
         return previousPosition;
@@ -124,5 +150,40 @@ public final class Board {
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof Board))
+            return false;
+        Board other = (Board) o;
+        return Arrays.equals(this.board, other.board);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(board);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Board (");
+        sb.append(BoardConstants.SIZE);
+        sb.append("x");
+        sb.append(BoardConstants.SIZE);
+        sb.append(")");
+        for (int i = 0; i < board.length; i++) {
+            if (i % BoardConstants.SIZE == 0) {
+                sb.append(board[i].letter());
+                sb.append("\n");
+            } else if (i < board.length - 1) {
+                sb.append(" ");
+            }
+            sb.append(board[i].letter());
+        }
+        return sb.toString();
     }
 }

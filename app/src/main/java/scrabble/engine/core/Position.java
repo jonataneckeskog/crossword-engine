@@ -1,7 +1,5 @@
 package scrabble.engine.core;
 
-import java.util.function.UnaryOperator;
-
 import scrabble.engine.util.BoardConstants;
 
 public record Position(int row, int column) {
@@ -10,53 +8,45 @@ public record Position(int row, int column) {
     public Position {
         if (row < 0 || row >= SIZE || column < 0 || column >= SIZE) {
             throw new IllegalArgumentException(
-                    "Position " + row + "/" + column + " (row/column) is out of bounds for length " + SIZE);
+                    "Position " + row + "/" + column + " (row/column) is out of bounds for board size " + SIZE);
         }
     }
 
-    public Position step(Step step) {
-        return step.apply(this);
+    // Safe step, returns null if outside the board
+    public Position tryStep(Step step) {
+        int newRow = row + step.deltaRow();
+        int newCol = column + step.deltaCol();
+
+        if (newRow < 0 || newRow >= SIZE || newCol < 0 || newCol >= SIZE) {
+            return null;
+        }
+        return new Position(newRow, newCol);
     }
 
     public int toIndex() {
         return row * SIZE + column;
     }
 
-    public Position down() {
-        return new Position(row + 1, column);
-    }
+    public enum Step {
+        RIGHT(0, 1),
+        LEFT(0, -1),
+        DOWN(1, 0),
+        UP(-1, 0);
 
-    public Position right() {
-        return new Position(row, column + 1);
-    }
+        private final int dRow;
+        private final int dCol;
 
-    public Position up() {
-        return new Position(row - 1, column);
-    }
-
-    public Position left() {
-        return new Position(row, column - 1);
-    }
-
-    public boolean isInBounds() {
-        return !(this.row < 0 || this.row >= SIZE || this.column < 0 || this.column >= SIZE);
-    }
-
-    public enum Step implements UnaryOperator<Position> {
-        RIGHT(Position::right),
-        LEFT(Position::left),
-        DOWN(Position::down),
-        UP(Position::up);
-
-        private final UnaryOperator<Position> operator;
-
-        Step(UnaryOperator<Position> operator) {
-            this.operator = operator;
+        Step(int dRow, int dCol) {
+            this.dRow = dRow;
+            this.dCol = dCol;
         }
 
-        @Override
-        public Position apply(Position position) {
-            return operator.apply(position);
+        public int deltaRow() {
+            return dRow;
+        }
+
+        public int deltaCol() {
+            return dCol;
         }
 
         public static Step reverseStep(Step step) {

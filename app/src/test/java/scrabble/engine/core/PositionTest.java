@@ -27,13 +27,11 @@ public class PositionTest {
     void testStep() {
         Position position1 = new Position(2, 2);
 
-        assertEquals(new Position(2, 3), position1.step(Step.RIGHT));
-        assertEquals(new Position(2, 1), position1.step(Step.LEFT));
-        assertEquals(new Position(1, 2), position1.step(Step.UP));
-        assertEquals(new Position(3, 2), position1.step(Step.DOWN));
+        assertEquals(new Position(2, 3), position1.tryStep(Step.RIGHT));
+        assertEquals(new Position(2, 1), position1.tryStep(Step.LEFT));
+        assertEquals(new Position(1, 2), position1.tryStep(Step.UP));
+        assertEquals(new Position(3, 2), position1.tryStep(Step.DOWN));
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            position1.step(Step.UP).step(Step.UP).step(Step.UP); // Stepping outside the board
-        });
+        assertNull(position1.tryStep(Step.UP).tryStep(Step.UP).tryStep(Step.UP)); // Stepping outside the board
     }
 }

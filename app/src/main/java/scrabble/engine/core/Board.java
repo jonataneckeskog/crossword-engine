@@ -84,8 +84,8 @@ public final class Board {
         for (Map.Entry<Position, Tile> entry : letterPlacemensMap.entrySet()) {
             Position position = entry.getKey();
 
-            Position position1 = tryStep(position, otherStep);
-            Position position2 = tryStep(position, reverseOtherStep);
+            Position position1 = position.tryStep(otherStep);
+            Position position2 = position.tryStep(reverseOtherStep);
 
             if (!Board.isEmpty(newBoard, position1)
                     || !Board.isEmpty(newBoard, position2)) {
@@ -123,7 +123,7 @@ public final class Board {
 
             score += tileScore;
 
-            currentPosition = tryStep(currentPosition, step);
+            currentPosition = currentPosition.tryStep(step);
         }
 
         return score * multiplier;
@@ -135,21 +135,13 @@ public final class Board {
             throw new IllegalArgumentException("Starting position is empty.");
         }
 
-        Position currentPosition = tryStep(previousPosition, step);
+        Position currentPosition = previousPosition.tryStep(step);
         while (!Board.isEmpty(board, currentPosition)) {
             previousPosition = currentPosition;
-            currentPosition = tryStep(currentPosition, step);
+            currentPosition = currentPosition.tryStep(step);
         }
 
         return previousPosition;
-    }
-
-    private Position tryStep(Position position, Position.Step step) {
-        try {
-            return position.step(step);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
     }
 
     @Override

@@ -1,10 +1,8 @@
 package scrabble.engine.core.components;
 
 import java.util.Arrays;
-import java.util.Map;
 
 import scrabble.engine.core.Move;
-import scrabble.engine.core.components.Position.Step;
 import scrabble.engine.util.BoardConstants;
 
 public final class Board {
@@ -59,62 +57,71 @@ public final class Board {
     }
 
     public PlacementResult placeWord(Move move) {
-        Map<Position, Tile> letterPlacemensMap = move.getTilePlacemenetMap();
-        Step step = move.getStep();
-
-        if (letterPlacemensMap.size() == 0) {
+        if (move.tilesPlaced() == 0) {
             throw new IllegalArgumentException("To place a word, there must exist tiles to be placed.");
         }
 
-        Step reverseStep = Step.reverseStep(step);
-        Step otherStep = Step.otherStep(step);
-        Step reverseOtherStep = Step.reverseStep(otherStep);
+        final Position.Step step = move.getStep();
+        final Position.Step reverseStep = Position.Step.reverseStep(step);
+        final Position.Step otherStep = Position.Step.otherStep(step);
+        final Position.Step reverseOtherStep = Position.Step.reverseStep(otherStep);
 
+        // clone board for mutation
         Tile[] newBoard = board.clone();
         int totalScore = 0;
 
-        // Place tiles and score first word
-        for (Map.Entry<Position, Tile> entry : letterPlacemensMap.entrySet()) {
-            if (!Board.isEmpty(newBoard, entry.getKey()))
+        // fast access to arrays
+        Position[] positions = move.getPositions();
+        Tile[] tiles = move.getTiles();
+
+        // Place tiles
+        for (int i = 0, n = positions.length; i < n; i++) {
+            Position pos = positions[i];
+            if (!Board.isEmpty(newBoard, pos)) {
                 throw new IllegalArgumentException(
-                        "Tried to place tile '" + entry.getValue().letter() + "' at an invalid square.");
-            newBoard[entry.getKey().toIndex()] = entry.getValue();
+                        "Tried to place tile '" + tiles[i].letter() + "' at an invalid square.");
+            }
+            newBoard[pos.toIndex()] = tiles[i];
         }
-        Position startPosition = findWordStartingPosition(newBoard, letterPlacemensMap.keySet().iterator().next(),
-                reverseStep);
-        totalScore += scoreWord(newBoard, letterPlacemensMap, startPosition, step);
-        if (letterPlacemensMap.size() == BoardConstants.RACK_SIZE)
+
+        // Score main word
+        Position startPosition = findWordStartingPosition(newBoard, positions[0], reverseStep);
+        totalScore += scoreWord(newBoard, move, startPosition, step);
+
+        if (move.tilesPlaced() == BoardConstants.RACK_SIZE) {
             totalScore += BoardConstants.BINGO_BONUS; // Bingo!!!
+        }
 
-        // Score hooked words on placed tiles
-        for (Map.Entry<Position, Tile> entry : letterPlacemensMap.entrySet()) {
-            Position position = entry.getKey();
+        // Score hooked words for each newly placed tile
+        for (int i = 0, n = positions.length; i < n; i++) {
+            Position pos = positions[i];
+            Position pos1 = pos.tryStep(otherStep);
+            Position pos2 = pos.tryStep(reverseOtherStep);
 
-            Position position1 = position.tryStep(otherStep);
-            Position position2 = position.tryStep(reverseOtherStep);
-
-            if (!Board.isEmpty(newBoard, position1)
-                    || !Board.isEmpty(newBoard, position2)) {
-                Position hookStartPosition = findWordStartingPosition(newBoard, position, reverseOtherStep);
-                totalScore += scoreWord(newBoard, letterPlacemensMap, hookStartPosition, otherStep);
+            // if either neighbor in the cross direction is occupied -> there's a cross word
+            if (!Board.isEmpty(newBoard, pos1) || !Board.isEmpty(newBoard, pos2)) {
+                Position hookStart = findWordStartingPosition(newBoard, pos, reverseOtherStep);
+                totalScore += scoreWord(newBoard, move, hookStart, otherStep);
             }
         }
 
         return new PlacementResult(new Board(newBoard), totalScore);
     }
 
-    private int scoreWord(Tile[] board, Map<Position, Tile> letterPlacementsMap, Position startPosition,
-            Position.Step step) {
+    private int scoreWord(Tile[] board, Move move, Position startPosition, Position.Step step) {
         int score = 0;
         int multiplier = 1;
 
-        Position currentPosition = startPosition;
-        while (!Board.isEmpty(board, currentPosition)) {
-            int tileScore = 0;
-            tileScore += board[currentPosition.toIndex()].points();
+        Position current = startPosition;
+        while (!Board.isEmpty(board, current)) {
+            int index = current.toIndex();
+            Tile tile = board[index];
+            int tileScore = tile.points();
 
-            if (letterPlacementsMap.containsKey(currentPosition)) {
-                switch (tileBonuses[currentPosition.toIndex()]) {
+            // Only newly placed tiles get letter/word bonuses
+            if (move.isPlaced(current)) {
+                byte bonus = tileBonuses[index];
+                switch (bonus) {
                     case BoardConstants.NORMAL -> {
                     }
                     case BoardConstants.DOUBLE_LETTER -> tileScore *= 2;
@@ -122,14 +129,12 @@ public final class Board {
                     case BoardConstants.DOUBLE_WORD -> multiplier *= 2;
                     case BoardConstants.TRIPLE_WORD -> multiplier *= 3;
                     default -> throw new IllegalArgumentException(
-                            "This tile contains the unknown bonus value '" + tileBonuses[currentPosition.toIndex()]
-                                    + "'.");
+                            "Unknown bonus value '" + bonus + "' at index " + index + ".");
                 }
             }
 
             score += tileScore;
-
-            currentPosition = currentPosition.tryStep(step);
+            current = current.tryStep(step);
         }
 
         return score * multiplier;
@@ -146,7 +151,6 @@ public final class Board {
             previousPosition = currentPosition;
             currentPosition = currentPosition.tryStep(step);
         }
-
         return previousPosition;
     }
 

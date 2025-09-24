@@ -1,44 +1,65 @@
 package scrabble.engine.core;
 
-import java.util.Map;
-
+import java.util.function.BiConsumer;
 import scrabble.engine.core.components.Position;
 import scrabble.engine.core.components.Tile;
 import scrabble.engine.core.components.Position.Step;
-
-import java.util.Iterator;
+import scrabble.engine.util.BoardConstants;
 
 public class Move {
-    private Map<Position, Tile> tilePlacementMap;
-    private Step step;
+    private final Position[] positions;
+    private final Tile[] tiles;
+    private final Step step;
+    private final boolean[] placedLookup;
 
-    public Move(Map<Position, Tile> tilePlacementMap) {
-        this.tilePlacementMap = tilePlacementMap;
-        this.step = stepFromMap();
-    }
-
-    private Step stepFromMap() {
-        if (tilePlacementMap.size() == 1)
-            return Step.RIGHT;
-
-        Iterator<Map.Entry<Position, Tile>> it = tilePlacementMap.entrySet().iterator();
-
-        if (it.hasNext()) {
-            Map.Entry<Position, Tile> entry1 = it.next();
-            if (it.hasNext()) {
-                Map.Entry<Position, Tile> entry2 = it.next();
-                return entry1.getKey().row() == entry2.getKey().row() ? Step.RIGHT : Step.DOWN;
-            }
+    public Move(Position[] positions, Tile[] tiles) {
+        if (positions.length != tiles.length) {
+            throw new IllegalArgumentException("Positions and tiles must have the same length.");
         }
+        this.positions = positions;
+        this.tiles = tiles;
+        this.step = stepFromArray();
 
-        return Step.RIGHT; // fallback
+        placedLookup = new boolean[BoardConstants.TOTAL_SIZE];
+        for (Position pos : positions) {
+            placedLookup[pos.toIndex()] = true;
+        }
     }
 
-    public Map<Position, Tile> getTilePlacemenetMap() {
-        return tilePlacementMap;
+    public Position getStartPosition() {
+        return positions[0];
+    }
+
+    private Step stepFromArray() {
+        if (positions.length == 1) {
+            return Step.RIGHT;
+        }
+        return positions[0].row() == positions[1].row() ? Step.RIGHT : Step.DOWN;
+    }
+
+    public void forAllMoves(BiConsumer<Position, Tile> action) {
+        for (int i = 0; i < positions.length; i++) {
+            action.accept(positions[i], tiles[i]);
+        }
+    }
+
+    public int tilesPlaced() {
+        return positions.length;
+    }
+
+    public Position[] getPositions() {
+        return positions;
+    }
+
+    public Tile[] getTiles() {
+        return tiles;
     }
 
     public Step getStep() {
         return step;
+    }
+
+    public boolean isPlaced(Position pos) {
+        return placedLookup[pos.toIndex()];
     }
 }

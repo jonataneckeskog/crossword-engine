@@ -1,8 +1,11 @@
 package scrabble.engine.core;
 
-import scrabble.engine.core.Position.Step;
-
 import java.util.Map;
+
+import scrabble.engine.core.components.Position;
+import scrabble.engine.core.components.Tile;
+import scrabble.engine.core.components.Position.Step;
+
 import java.util.Iterator;
 
 public class Move {

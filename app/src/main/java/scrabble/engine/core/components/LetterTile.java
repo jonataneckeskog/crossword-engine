@@ -1,4 +1,4 @@
-package scrabble.engine.core;
+package scrabble.engine.core.components;
 
 public final class LetterTile implements Tile {
     private final char letter;

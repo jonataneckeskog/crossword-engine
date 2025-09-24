@@ -1,4 +1,4 @@
-package scrabble.engine.core;
+package scrabble.engine.core.components;
 
 import static org.junit.jupiter.api.Assertions.*;
 

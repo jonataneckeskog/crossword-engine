@@ -1,9 +1,11 @@
-package scrabble.engine.core;
+package scrabble.engine.core.components;
 
 import java.util.Arrays;
 import java.util.Map;
+
+import scrabble.engine.core.Move;
+import scrabble.engine.core.components.Position.Step;
 import scrabble.engine.util.BoardConstants;
-import scrabble.engine.core.Position.Step;
 
 public final class Board {
     private final Tile[] board;

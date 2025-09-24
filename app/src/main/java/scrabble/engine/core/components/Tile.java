@@ -1,4 +1,4 @@
-package scrabble.engine.core;
+package scrabble.engine.core.components;
 
 public sealed interface Tile permits LetterTile, BlankTile {
     char letter();

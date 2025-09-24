@@ -1,8 +1,8 @@
-package scrabble.engine.core;
+package scrabble.engine.core.components;
 
 import org.junit.jupiter.api.Test;
 
-import scrabble.engine.core.Position.Step;
+import scrabble.engine.core.components.Position.Step;
 import scrabble.engine.util.BoardConstants;
 
 import static org.junit.jupiter.api.Assertions.*;

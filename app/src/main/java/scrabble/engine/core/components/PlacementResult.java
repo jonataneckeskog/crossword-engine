@@ -1,4 +1,4 @@
-package scrabble.engine.core;
+package scrabble.engine.core.components;
 
 public record PlacementResult(Board board, int score) {
 }

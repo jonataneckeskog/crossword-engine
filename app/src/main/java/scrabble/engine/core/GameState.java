@@ -1,5 +1,11 @@
 package scrabble.engine.core;
 
+import scrabble.engine.core.components.Bag;
+import scrabble.engine.core.components.Board;
+import scrabble.engine.core.components.DrawHandler;
+import scrabble.engine.core.components.PlacementResult;
+import scrabble.engine.core.components.Rack;
+
 public final class GameState {
     private final Board board;
     private final Bag bag;

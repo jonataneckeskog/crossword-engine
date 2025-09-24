@@ -1,9 +1,10 @@
 package scrabble.engine.core.components;
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
 
-import scrabble.engine.util.BoardConstants;
+import scrabble.engine.util.game.BoardConstants;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.List;

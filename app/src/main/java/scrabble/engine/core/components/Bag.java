@@ -1,91 +1,129 @@
 package scrabble.engine.core.components;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Map;
 
-import scrabble.engine.util.BoardConstants;
+import java.util.Arrays;
+
+import java.util.Random;
+
+import scrabble.engine.util.game.BagConstants;
+
+import scrabble.engine.util.game.BagConstants.LetterData;
 
 public final class Bag {
-    private final List<Tile> tiles;
+    private final byte[] frequencyMap;
+    private int size;
 
-    private Bag(List<Tile> tiles) {
-        this.tiles = tiles;
+    private static final Random RANDOM = new Random();
+
+    private Bag() {
+        frequencyMap = new byte[BagConstants.UNIQUE_TILES];
+        size = 0;
+    }
+
+    private Bag(byte[] frequencyMap, int size) {
+        this.frequencyMap = frequencyMap;
+        this.size = size;
     }
 
     public static Bag standardBag() {
-        List<Tile> tiles = new ArrayList<>();
+        byte[] frequencyMap = new byte[BagConstants.UNIQUE_TILES];
+        int size = 0;
 
-        for (var entry : BoardConstants.TILE_COUNTS.entrySet()) {
-            char letter = entry.getKey();
-            int count = entry.getValue();
-
-            for (int i = 0; i < count; i++) {
-                tiles.add(TileFactory.getTile(letter));
-            }
+        for (Map.Entry<Character, LetterData> entry : BagConstants.TILE_DATA.entrySet()) {
+            int count = entry.getValue().count();
+            frequencyMap[BagConstants.getIndex(entry.getKey())] = (byte) count;
+            size += count;
         }
 
-        return new Bag(tiles);
+        return new Bag(frequencyMap, size);
     }
 
     public static Bag createFromString(String letters) {
         int length = letters.length();
-        if (length > BoardConstants.TILE_COUNT) {
+        if (length > BagConstants.TILE_COUNT) {
             throw new IllegalArgumentException(
-                    "String cannot contain more than " + BoardConstants.TILE_COUNT + " letters. It currently contains "
+                    "String cannot contain more than " + BagConstants.TILE_COUNT + " letters. It currently contains "
                             + length + ".");
         }
 
-        List<Tile> tiles = new ArrayList<>();
+        byte[] frequencyMap = new byte[BagConstants.UNIQUE_TILES];
+        int size = 0;
 
         for (int i = 0; i < length; i++) {
             char letter = letters.charAt(i);
-            if (!TileFactory.isValidLetter(letter)) {
+            if (!BagConstants.isValidLetter(letter)) {
                 throw new IllegalArgumentException("String contains invalid character '" + letter + "'");
             }
 
-            tiles.add(TileFactory.getTile(letter));
+            frequencyMap[BagConstants.getIndex(letter)]++;
+            size++;
         }
 
-        return new Bag(tiles);
-    }
-
-    public int size() {
-        return tiles.size();
-    }
-
-    public boolean isEmpty() {
-        return tiles.isEmpty();
-    }
-
-    public List<Tile> getTiles() {
-        return Collections.unmodifiableList(tiles);
-    }
-
-    public String letters() {
-        StringBuilder sb = new StringBuilder(tiles.size());
-        for (Tile tile : tiles) {
-            sb.append(tile.letter());
-        }
-        return sb.toString();
+        return new Bag(frequencyMap, size);
     }
 
     public DrawResult drawTiles(int numberOfTiles) {
-        if (numberOfTiles > tiles.size()) {
-            throw new IllegalArgumentException(
-                    "Tried to draw " + numberOfTiles + " tiles. The bag only contains " + tiles.size() + ".");
+        if (numberOfTiles < 0)
+            throw new IllegalArgumentException("Cannot draw negative number of tiles");
+        if (numberOfTiles > size)
+            throw new IllegalArgumentException("Not enough tiles left in the bag");
+
+        char[] drawnTiles = new char[numberOfTiles];
+        byte[] newFrequencyMap = frequencyMap.clone();
+        int newSize = size;
+
+        for (int n = 0; n < numberOfTiles; n++) {
+            int r = RANDOM.nextInt(newSize);
+            int cumulative = 0;
+
+            for (int i = 0; i < newFrequencyMap.length; i++) {
+                cumulative += newFrequencyMap[i];
+                if (r < cumulative) {
+                    drawnTiles[n] = BagConstants.INDEX_TO_CHAR[i];
+                    newFrequencyMap[i]--;
+                    newSize--;
+                    break;
+                }
+            }
         }
 
-        List<Tile> remaining = new ArrayList<>(tiles);
-        List<Tile> drawn = new ArrayList<>();
+        return new DrawResult(new Bag(newFrequencyMap, newSize), drawnTiles);
+    }
 
-        for (int i = 0; i < numberOfTiles; i++) {
-            int index = ThreadLocalRandom.current().nextInt(remaining.size());
-            drawn.add(remaining.remove(index));
+    public Bag removeTiles(char[] tiles) {
+        if (tiles.length == 0)
+            return this;
+
+        byte[] newFrequencyMap = frequencyMap.clone();
+        int newSize = size;
+
+        for (char tile : tiles) {
+            if (!BagConstants.isValidLetter(tile)) {
+                throw new IllegalArgumentException("Invalid tile: " + tile);
+            }
+
+            int index = BagConstants.getIndex(tile);
+            if (newFrequencyMap[index] == 0)
+                throw new IllegalStateException("Tile '" + tile + "' is not available in the bag");
+
+            newFrequencyMap[index]--;
+            newSize--;
         }
 
-        return new DrawResult(new Bag(remaining), drawn);
+        return new Bag(newFrequencyMap, newSize);
+    }
+
+    public int size() {
+        return size;
+    }
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+    public byte[] getFrequencyMap() {
+        return frequencyMap.clone();
     }
 
     @Override
@@ -96,36 +134,32 @@ public final class Bag {
             return false;
         Bag other = (Bag) o;
 
-        if (this.tiles.size() != other.tiles.size())
+        if (this.size != other.size)
             return false;
 
-        List<Tile> otherTilesCopy = new ArrayList<>(other.tiles);
-        for (Tile tile : this.tiles) {
-            if (!otherTilesCopy.remove(tile)) {
-                return false;
-            }
-        }
-        return true;
+        return Arrays.equals(this.frequencyMap, other.frequencyMap);
     }
 
     @Override
     public int hashCode() {
-        int hash = 0;
-        for (Tile tile : tiles) {
-            hash += tile.hashCode();
-        }
-        return hash;
+        return Arrays.hashCode(frequencyMap);
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Bag[");
-        for (int i = 0; i < tiles.size(); i++) {
-            sb.append(tiles.get(i).letter());
-            if (i < tiles.size() - 1)
-                sb.append(", ");
+
+        boolean first = true;
+        for (int i = 0; i < frequencyMap.length; i++) {
+            for (int count = 0; count < frequencyMap[i]; count++) {
+                if (!first)
+                    sb.append(", ");
+                sb.append(BagConstants.INDEX_TO_CHAR[i]);
+                first = false;
+            }
         }
+
         sb.append("]");
         return sb.toString();
     }

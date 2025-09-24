@@ -1,9 +1,10 @@
 package scrabble.engine.core.components;
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
 
-import scrabble.engine.util.BoardConstants;
+import scrabble.engine.util.game.BoardConstants;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,27 +22,27 @@ public class BagTest {
 
     @Test
     void testCreateFromString() {
-        Bag bag1 = Bag.createFromString(BAG_STRING_1);
-        Bag bag2 = Bag.createFromString(BAG_STRING_1);
-        Bag bag3 = Bag.createFromString(BAG_STRING_2);
+        Bag_Copy bag1 = Bag_Copy.createFromString(BAG_STRING_1);
+        Bag_Copy bag2 = Bag_Copy.createFromString(BAG_STRING_1);
+        Bag_Copy bag3 = Bag_Copy.createFromString(BAG_STRING_2);
 
         assertEquals(bag1, bag2);
         assertNotEquals(bag1, bag3);
 
         assertThrows(IllegalArgumentException.class, () -> {
-            Bag.createFromString(BAG_STRING_3);
+            Bag_Copy.createFromString(BAG_STRING_3);
         });
         assertThrows(IllegalArgumentException.class, () -> {
-            Bag.createFromString(BAG_STRING_4);
+            Bag_Copy.createFromString(BAG_STRING_4);
         });
         assertDoesNotThrow(() -> {
-            Bag.createFromString(BAG_STRING_5);
+            Bag_Copy.createFromString(BAG_STRING_5);
         });
     }
 
     @Test
     void testGetBags() {
-        Bag bag = Bag.createFromString(BAG_STRING_1);
+        Bag_Copy bag = Bag_Copy.createFromString(BAG_STRING_1);
         List<Tile> tiles = bag.getTiles();
         assertTrue(tiles.contains(TILE_1));
         assertTrue(tiles.contains(TILE_2));
@@ -50,7 +51,7 @@ public class BagTest {
 
     @Test
     void testLetters() {
-        Bag bag = Bag.createFromString(BAG_STRING_1);
+        Bag_Copy bag = Bag_Copy.createFromString(BAG_STRING_1);
         String letters = bag.letters();
 
         List<Character> expectedList = "ACEDB".chars()
@@ -67,13 +68,13 @@ public class BagTest {
 
     @Test
     void testDrawTiles() {
-        Bag bag1 = Bag.createFromString(BAG_STRING_1);
-        Bag bag2 = Bag.createFromString("hk").drawTiles(1).bag();
+        Bag_Copy bag1 = Bag_Copy.createFromString(BAG_STRING_1);
+        Bag_Copy bag2 = Bag_Copy.createFromString("hk").drawTiles(1).bag();
 
-        assertEquals(Bag.createFromString(BAG_STRING_5), bag1.drawTiles(5).bag());
-        assertEquals(Bag.createFromString(BAG_STRING_1), bag1.drawTiles(0).bag());
+        assertEquals(Bag_Copy.createFromString(BAG_STRING_5), bag1.drawTiles(5).bag());
+        assertEquals(Bag_Copy.createFromString(BAG_STRING_1), bag1.drawTiles(0).bag());
 
-        assertTrue(bag2.equals(Bag.createFromString("h")) || bag2.equals(Bag.createFromString("k")));
+        assertTrue(bag2.equals(Bag_Copy.createFromString("h")) || bag2.equals(Bag_Copy.createFromString("k")));
 
         assertThrows(IllegalArgumentException.class, () -> {
             bag1.drawTiles(8);

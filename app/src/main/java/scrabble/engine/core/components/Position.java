@@ -1,6 +1,6 @@
 package scrabble.engine.core.components;
 
-import scrabble.engine.util.BoardConstants;
+import scrabble.engine.util.game.BoardConstants;
 
 public record Position(int row, int column) {
     private static final int SIZE = BoardConstants.SIZE;

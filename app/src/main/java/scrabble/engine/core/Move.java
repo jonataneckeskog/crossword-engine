@@ -4,7 +4,7 @@ import java.util.function.BiConsumer;
 import scrabble.engine.core.components.Position;
 import scrabble.engine.core.components.Tile;
 import scrabble.engine.core.components.Position.Step;
-import scrabble.engine.util.BoardConstants;
+import scrabble.engine.util.game.BoardConstants;
 
 public class Move {
     private final Position[] positions;

@@ -2,7 +2,7 @@ package scrabble.engine.core.components;
 
 import org.junit.jupiter.api.Test;
 import scrabble.engine.core.Move;
-import scrabble.engine.util.BoardConstants;
+import scrabble.engine.util.game.BoardConstants;
 
 import static org.junit.jupiter.api.Assertions.*;
 

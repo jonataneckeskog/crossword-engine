@@ -1,109 +1,111 @@
 package scrabble.engine.core.components;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
+import scrabble.engine.util.game.BagConstants;
+import scrabble.engine.util.game.GameConstants;
 
-import scrabble.engine.util.BoardConstants;
+import java.util.Arrays;
 
 public final class Rack {
-    private final List<Tile> tiles;
-    private static final int RACK_SIZE = BoardConstants.RACK_SIZE;
+    private final byte[] frequencyMap;
+    private final int size;
 
-    private Rack(List<Tile> tiles) {
-        this.tiles = tiles;
+    private Rack() {
+        frequencyMap = new byte[BagConstants.UNIQUE_TILES];
+        size = 0;
+    }
+
+    private Rack(byte[] frequencyMap, int size) {
+        this.frequencyMap = frequencyMap;
+        this.size = size;
     }
 
     public static Rack emptyRack() {
-        return new Rack(new ArrayList<>());
+        return new Rack();
     }
 
     public static Rack createFromString(String letters) {
         int length = letters.length();
-        if (length > RACK_SIZE) {
+        if (length > BagConstants.TILE_COUNT) {
             throw new IllegalArgumentException(
-                    "Input string should contain a maximum of " + RACK_SIZE + " letters. Containes " + length + ".");
+                    "String cannot contain more than " + BagConstants.TILE_COUNT + " letters. It currently contains "
+                            + length + ".");
         }
 
-        List<Tile> tiles = new ArrayList<>();
+        byte[] frequencyMap = new byte[BagConstants.UNIQUE_TILES];
+        int size = 0;
 
         for (int i = 0; i < length; i++) {
             char letter = letters.charAt(i);
-            if (!TileFactory.isValidLetter(letter)) {
+            if (!BagConstants.isValidLetter(letter)) {
                 throw new IllegalArgumentException("String contains invalid character '" + letter + "'");
             }
 
-            tiles.add(TileFactory.getTile(letter));
+            frequencyMap[BagConstants.getIndex(letter)]++;
+            size++;
         }
 
-        return new Rack(tiles);
+        return new Rack(frequencyMap, size);
     }
 
     public DrawHandler drawFrom(Bag bag) {
-        int numberOfTiles = bag.size() < RACK_SIZE - size() ? bag.size() : RACK_SIZE - size();
+        int numberOfTiles = bag.size() < GameConstants.RACK_SIZE - size ? bag.size()
+                : GameConstants.RACK_SIZE - size;
         DrawResult drawResult = bag.drawTiles(numberOfTiles);
         return new DrawHandler(drawResult.bag(), addTiles(drawResult.drawnTiles()));
     }
 
-    public Rack removeTiles(String letters) {
-        int length = letters.length();
-        if (length > tiles.size()) {
-            throw new IllegalArgumentException(
-                    "Cannot draw " + length + " tiles since rack only contains " + tiles.size() + ".");
-        }
+    public Rack removeTiles(char[] tiles) {
+        if (tiles.length == 0)
+            return this;
 
-        List<Tile> remaining = new ArrayList<>(tiles);
+        byte[] newFrequencyMap = frequencyMap.clone();
+        int newSize = size;
 
-        for (int i = 0; i < length; i++) {
-            char letter = letters.charAt(i);
-            if (!TileFactory.isValidLetter(letter)) {
-                throw new IllegalArgumentException("String contains invalid character '" + letter + "'");
+        for (char tile : tiles) {
+            if (!BagConstants.isValidLetter(tile)) {
+                throw new IllegalArgumentException("Invalid tile: " + tile);
             }
 
-            Tile tile = TileFactory.getTile(letter);
+            int index = BagConstants.getIndex(tile);
+            if (newFrequencyMap[index] == 0)
+                throw new IllegalStateException("Tile '" + tile + "' is not available in the bag");
 
-            boolean removed = remaining.remove(tile);
-            if (!removed) {
-                throw new IllegalArgumentException("Cannot draw " + letter + " since it is not on the rack.");
-            }
+            newFrequencyMap[index]--;
+            newSize--;
         }
 
-        return new Rack(remaining);
+        return new Rack(newFrequencyMap, newSize);
     }
 
-    public Rack addTiles(List<Tile> tiles) {
-        List<Tile> newTiles = new ArrayList<>(this.tiles);
-        newTiles.addAll(tiles);
+    public Rack addTiles(char[] tiles) {
+        byte[] frequencyMap = this.frequencyMap.clone();
+        int size = this.size;
 
-        if (newTiles.size() > RACK_SIZE)
+        for (int i = 0, n = tiles.length; i < n; i++) {
+            frequencyMap[BagConstants.getIndex(tiles[i])]++;
+            size++;
+        }
+
+        if (size > GameConstants.RACK_SIZE)
             throw new IllegalArgumentException(
-                    "Added too many tiles, rack maximum size is " + RACK_SIZE + " but it would have contained "
-                            + newTiles.size()
+                    "Added too many tiles, rack maximum size is " + GameConstants.RACK_SIZE
+                            + " but it would have contained "
+                            + size
                             + " tiles.");
 
-        return new Rack(newTiles);
+        return new Rack(frequencyMap, size);
     }
 
     public int size() {
-        return tiles.size();
+        return size;
     }
 
     public boolean isEmpty() {
-        return tiles.isEmpty();
+        return size == 0;
     }
 
-    // Returns an immutable version of tiles.
-    // Since Tile is completely immutable, nothing can be changed.
-    public List<Tile> getTiles() {
-        return Collections.unmodifiableList(tiles);
-    }
-
-    public String letters() {
-        StringBuilder sb = new StringBuilder(tiles.size());
-        for (Tile tile : tiles) {
-            sb.append(tile.letter());
-        }
-        return sb.toString();
+    public byte[] getFrequencyMap() {
+        return frequencyMap.clone();
     }
 
     @Override
@@ -114,36 +116,32 @@ public final class Rack {
             return false;
         Rack other = (Rack) o;
 
-        if (this.tiles.size() != other.tiles.size())
+        if (this.size != other.size)
             return false;
 
-        List<Tile> otherTilesCopy = new ArrayList<>(other.tiles);
-        for (Tile tile : this.tiles) {
-            if (!otherTilesCopy.remove(tile)) {
-                return false;
-            }
-        }
-        return true;
+        return Arrays.equals(this.frequencyMap, other.frequencyMap);
     }
 
     @Override
     public int hashCode() {
-        int hash = 0;
-        for (Tile tile : tiles) {
-            hash += tile.hashCode();
-        }
-        return hash;
+        return Arrays.hashCode(frequencyMap);
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Rack[");
-        for (int i = 0; i < tiles.size(); i++) {
-            sb.append(tiles.get(i).letter());
-            if (i < tiles.size() - 1)
-                sb.append(", ");
+
+        boolean first = true;
+        for (int i = 0; i < frequencyMap.length; i++) {
+            for (int count = 0; count < frequencyMap[i]; count++) {
+                if (!first)
+                    sb.append(", ");
+                sb.append(BagConstants.INDEX_TO_CHAR[i]);
+                first = false;
+            }
         }
+
         sb.append("]");
         return sb.toString();
     }

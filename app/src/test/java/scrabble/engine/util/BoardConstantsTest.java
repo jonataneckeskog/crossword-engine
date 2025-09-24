@@ -3,6 +3,9 @@ package scrabble.engine.util;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+
+import scrabble.engine.util.game.BoardConstants;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class BoardConstantsTest {

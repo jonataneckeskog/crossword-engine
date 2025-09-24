@@ -3,7 +3,7 @@ package scrabble.engine.core.components;
 import java.util.Arrays;
 
 import scrabble.engine.core.Move;
-import scrabble.engine.util.BoardConstants;
+import scrabble.engine.util.game.BoardConstants;
 
 public final class Board {
     private final Tile[] board;

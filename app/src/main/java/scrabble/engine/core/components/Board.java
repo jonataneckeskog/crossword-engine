@@ -3,19 +3,22 @@ package scrabble.engine.core.components;
 import java.util.Arrays;
 
 import scrabble.engine.core.Move;
+import scrabble.engine.util.game.BagConstants;
+import scrabble.engine.util.game.BagConstants.LetterData;
 import scrabble.engine.util.game.BoardConstants;
+import scrabble.engine.util.game.GameConstants;
 
 public final class Board {
-    private final Tile[] board;
-    private final byte[] tileBonuses = BoardConstants.SCRABBLE_BOARD;
+    private final char[] board;
 
-    private Board(Tile[] board) {
+    private Board(char[] board) {
         this.board = board;
     }
 
     public static Board emptyBoard() {
-        Tile[] tiles = new Tile[BoardConstants.TOTAL_SIZE];
-        return new Board(tiles); // All tiles automatically get assigned to null
+        char[] tiles = new char[BoardConstants.TOTAL_SIZE];
+        Arrays.fill(tiles, BoardConstants.EMPTY_SQUARE);
+        return new Board(tiles);
     }
 
     public static Board fromString(String boardString) {
@@ -25,34 +28,29 @@ public final class Board {
             throw new IllegalArgumentException(
                     "Input string should be " + totalSize + " characters long. Is " + boardString.length());
 
-        Tile[] tiles = new Tile[totalSize];
+        char[] tiles = new char[totalSize];
         for (int i = 0; i < totalSize; i++) {
             char letter = boardString.charAt(i);
 
-            if (letter == '-') { // '-' is wildcard for empty square
-                tiles[i] = null;
-                continue;
-            }
-
-            if (!TileFactory.isValidLetter(letter)) {
+            if (!BagConstants.isValidLetter(letter)) {
                 throw new IllegalArgumentException("Symbol " + letter + " is not a valid letter.");
             }
 
-            tiles[i] = TileFactory.getTile(letter);
+            tiles[i] = letter;
         }
 
         return new Board(tiles);
     }
 
-    private static boolean isEmpty(Tile[] board, Position position) {
-        return position == null || board[position.toIndex()] == null;
+    private static boolean isEmpty(char[] board, Position position) {
+        return position == null || board[position.toIndex()] == BoardConstants.EMPTY_SQUARE;
     }
 
-    public Tile tileAt(int index) {
+    public char tileAt(int index) {
         return board[index];
     }
 
-    public Tile tileAt(Position position) {
+    public char tileAt(Position position) {
         return board[position.toIndex()];
     }
 
@@ -67,19 +65,19 @@ public final class Board {
         final Position.Step reverseOtherStep = Position.Step.reverseStep(otherStep);
 
         // clone board for mutation
-        Tile[] newBoard = board.clone();
+        char[] newBoard = board.clone();
         int totalScore = 0;
 
         // fast access to arrays
         Position[] positions = move.getPositions();
-        Tile[] tiles = move.getTiles();
+        char[] tiles = move.getTiles();
 
         // Place tiles
         for (int i = 0, n = positions.length; i < n; i++) {
             Position pos = positions[i];
             if (!Board.isEmpty(newBoard, pos)) {
                 throw new IllegalArgumentException(
-                        "Tried to place tile '" + tiles[i].letter() + "' at an invalid square.");
+                        "Tried to place tile '" + tiles[i] + "' at an invalid square.");
             }
             newBoard[pos.toIndex()] = tiles[i];
         }
@@ -88,8 +86,8 @@ public final class Board {
         Position startPosition = findWordStartingPosition(newBoard, positions[0], reverseStep);
         totalScore += scoreWord(newBoard, move, startPosition, step);
 
-        if (move.tilesPlaced() == BoardConstants.RACK_SIZE) {
-            totalScore += BoardConstants.BINGO_BONUS; // Bingo!!!
+        if (move.tilesPlaced() == GameConstants.RACK_SIZE) {
+            totalScore += GameConstants.BINGO_BONUS; // Bingo!!!
         }
 
         // Score hooked words for each newly placed tile
@@ -108,39 +106,51 @@ public final class Board {
         return new PlacementResult(new Board(newBoard), totalScore);
     }
 
-    private int scoreWord(Tile[] board, Move move, Position startPosition, Position.Step step) {
-        int score = 0;
-        int multiplier = 1;
+    private int scoreWord(char[] board, Move move, Position startPosition, Position.Step step) {
+        int totalScore = 0;
+        int wordMultiplier = 1;
 
         Position current = startPosition;
+
         while (!Board.isEmpty(board, current)) {
             int index = current.toIndex();
-            Tile tile = board[index];
-            int tileScore = tile.points();
+            char tile = board[index];
 
-            // Only newly placed tiles get letter/word bonuses
+            // Determine tile score
+            int tileScore;
+            if (BoardConstants.isBlank(tile)) {
+                tileScore = 0;
+            } else {
+                LetterData data = BagConstants.TILE_DATA.get(tile);
+                if (data == null) {
+                    throw new IllegalArgumentException("Unknown tile '" + tile + "' at index " + index);
+                }
+                tileScore = data.getScore();
+            }
+
+            // Apply letter/word bonuses if this tile was placed this turn
             if (move.isPlaced(current)) {
-                byte bonus = tileBonuses[index];
+                byte bonus = BoardConstants.SCRABBLE_BOARD[index];
                 switch (bonus) {
                     case BoardConstants.NORMAL -> {
                     }
                     case BoardConstants.DOUBLE_LETTER -> tileScore *= 2;
                     case BoardConstants.TRIPLE_LETTER -> tileScore *= 3;
-                    case BoardConstants.DOUBLE_WORD -> multiplier *= 2;
-                    case BoardConstants.TRIPLE_WORD -> multiplier *= 3;
+                    case BoardConstants.DOUBLE_WORD -> wordMultiplier *= 2;
+                    case BoardConstants.TRIPLE_WORD -> wordMultiplier *= 3;
                     default -> throw new IllegalArgumentException(
-                            "Unknown bonus value '" + bonus + "' at index " + index + ".");
+                            "Unknown bonus value '" + bonus + "' at index " + index);
                 }
             }
 
-            score += tileScore;
+            totalScore += tileScore;
             current = current.tryStep(step);
         }
 
-        return score * multiplier;
+        return totalScore * wordMultiplier;
     }
 
-    private Position findWordStartingPosition(Tile[] board, Position placedPosition, Position.Step step) {
+    private Position findWordStartingPosition(char[] board, Position placedPosition, Position.Step step) {
         Position previousPosition = placedPosition;
         if (Board.isEmpty(board, previousPosition)) {
             throw new IllegalArgumentException("Starting position is empty.");
@@ -172,19 +182,25 @@ public final class Board {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Board (");
-        sb.append(BoardConstants.SIZE);
-        sb.append("x");
-        sb.append(BoardConstants.SIZE);
-        sb.append(")");
-        for (int i = 0; i < board.length; i++) {
-            if (i % BoardConstants.SIZE == 0) {
-                sb.append(board[i].letter());
-                sb.append("\n");
-            } else if (i < board.length - 1) {
-                sb.append(" ");
+        sb.append("Board (")
+                .append(BoardConstants.SIZE)
+                .append("x")
+                .append(BoardConstants.SIZE)
+                .append(")\n");
+
+        for (int r = 0; r < BoardConstants.SIZE; r++) {
+            for (int c = 0; c < BoardConstants.SIZE; c++) {
+                int idx = r * BoardConstants.SIZE + c;
+                char ch = board[idx];
+                if (ch == BoardConstants.EMPTY_SQUARE) {
+                    sb.append(BoardConstants.EMPTY_SQUARE); // or any nice placeholder
+                } else {
+                    sb.append(ch);
+                }
+                if (c < BoardConstants.SIZE - 1)
+                    sb.append(' ');
             }
-            sb.append(board[i].letter());
+            sb.append('\n');
         }
         return sb.toString();
     }

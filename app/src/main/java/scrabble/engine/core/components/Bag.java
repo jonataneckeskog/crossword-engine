@@ -31,7 +31,7 @@ public final class Bag {
         int size = 0;
 
         for (Map.Entry<Character, LetterData> entry : BagConstants.TILE_DATA.entrySet()) {
-            int count = entry.getValue().count();
+            int count = entry.getValue().getCount();
             frequencyMap[BagConstants.getIndex(entry.getKey())] = (byte) count;
             size += count;
         }

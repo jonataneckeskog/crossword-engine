@@ -4,6 +4,11 @@ public final class BoardConstants {
         private BoardConstants() {
         }
 
+        public static final char EMPTY_SQUARE = '\u0000';
+
+        public static final int SIZE = 15;
+        public static final int TOTAL_SIZE = SIZE * SIZE;
+
         public static final byte NORMAL = 0;
         public static final byte DOUBLE_LETTER = 1;
         public static final byte TRIPLE_LETTER = 2;
@@ -12,9 +17,6 @@ public final class BoardConstants {
 
         public static final byte QUADRUPLE_LETTER = 5;
         public static final byte QUADRUPLE_WORD = 6;
-
-        public static final int SIZE = 15;
-        public static final int TOTAL_SIZE = SIZE * SIZE;
 
         // Standard 15 x 15 Scrabble board
         public static final byte[] SCRABBLE_BOARD = {
@@ -79,4 +81,8 @@ public final class BoardConstants {
                         NORMAL,
                         DOUBLE_LETTER, NORMAL, NORMAL, TRIPLE_WORD
         };
+
+        public static boolean isBlank(char letter) {
+                return !Character.isUpperCase(letter);
+        }
 }

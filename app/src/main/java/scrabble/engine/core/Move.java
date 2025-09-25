@@ -2,17 +2,16 @@ package scrabble.engine.core;
 
 import java.util.function.BiConsumer;
 import scrabble.engine.core.components.Position;
-import scrabble.engine.core.components.Tile;
 import scrabble.engine.core.components.Position.Step;
 import scrabble.engine.util.game.BoardConstants;
 
 public class Move {
     private final Position[] positions;
-    private final Tile[] tiles;
+    private final char[] tiles;
     private final Step step;
     private final boolean[] placedLookup;
 
-    public Move(Position[] positions, Tile[] tiles) {
+    public Move(Position[] positions, char[] tiles) {
         if (positions.length != tiles.length) {
             throw new IllegalArgumentException("Positions and tiles must have the same length.");
         }
@@ -37,7 +36,7 @@ public class Move {
         return positions[0].row() == positions[1].row() ? Step.RIGHT : Step.DOWN;
     }
 
-    public void forAllMoves(BiConsumer<Position, Tile> action) {
+    public void forAllMoves(BiConsumer<Position, Character> action) {
         for (int i = 0; i < positions.length; i++) {
             action.accept(positions[i], tiles[i]);
         }
@@ -51,7 +50,7 @@ public class Move {
         return positions;
     }
 
-    public Tile[] getTiles() {
+    public char[] getTiles() {
         return tiles;
     }
 

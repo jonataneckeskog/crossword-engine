@@ -107,7 +107,7 @@ public final class Board {
         return new PlacementResult(new Board(newBoard), totalScore);
     }
 
-    private int scoreWord(char[] board, Move move, Position startPosition, Position.Step step) {
+    private static int scoreWord(char[] board, Move move, Position startPosition, Position.Step step) {
         int totalScore = 0;
         int wordMultiplier = 1;
 
@@ -151,7 +151,7 @@ public final class Board {
         return totalScore * wordMultiplier;
     }
 
-    private Position findWordStartingPosition(char[] board, Position placedPosition, Position.Step step) {
+    private static Position findWordStartingPosition(char[] board, Position placedPosition, Position.Step step) {
         Position previousPosition = placedPosition;
         if (Board.isEmpty(board, previousPosition)) {
             throw new IllegalArgumentException("Starting position is empty.");

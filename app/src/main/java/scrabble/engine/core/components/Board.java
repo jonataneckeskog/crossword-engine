@@ -32,7 +32,8 @@ public final class Board {
         for (int i = 0; i < totalSize; i++) {
             char letter = boardString.charAt(i);
 
-            if (!BagConstants.isValidLetter(letter)) {
+            if (!(BagConstants.isValidLetter(Character.toUpperCase(letter))
+                    || (letter == BoardConstants.EMPTY_SQUARE))) {
                 throw new IllegalArgumentException("Symbol " + letter + " is not a valid letter.");
             }
 

@@ -1,6 +1,6 @@
 package scrabble.engine.core;
 
-import scrabble.engine.core.components.Bag_Copy;
+import scrabble.engine.core.components.Bag;
 import scrabble.engine.core.components.Board;
 import scrabble.engine.core.components.DrawHandler;
 import scrabble.engine.core.components.PlacementResult;
@@ -8,12 +8,12 @@ import scrabble.engine.core.components.Rack;
 
 public final class PlayerView {
     private final Board board;
-    private final Bag_Copy bag;
+    private final Bag bag;
     private final Rack rack;
     private final int[] scores;
     private final int playerTurn;
 
-    private PlayerView(Board board, Bag_Copy bag, Rack rack, int[] scores, int playerTurn) {
+    private PlayerView(Board board, Bag bag, Rack rack, int[] scores, int playerTurn) {
         this.board = board;
         this.bag = bag;
         this.rack = rack;
@@ -23,7 +23,7 @@ public final class PlayerView {
 
     public static PlayerView startState() {
         Board board = Board.emptyBoard();
-        Bag_Copy startBag = Bag_Copy.standardBag();
+        Bag startBag = Bag.standardBag();
         Rack rack = Rack.emptyRack();
 
         DrawHandler drawResult = rack.drawFrom(startBag);
@@ -57,7 +57,7 @@ public final class PlayerView {
         return board;
     }
 
-    public Bag_Copy getBag() {
+    public Bag getBag() {
         return bag;
     }
 

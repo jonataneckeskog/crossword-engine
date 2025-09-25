@@ -1,104 +1,118 @@
 package scrabble.engine.core.components;
 
 import org.junit.jupiter.api.Test;
-
-import scrabble.engine.util.game.BoardConstants;
+import scrabble.engine.util.game.GameConstants;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Arrays;
 
 public class RackTest {
-    private final static String RACK_STRING_1 = "abcde";
-    private final static String RACK_STRING_2 = "abcdefg";
-    private final static String RACK_STRING_3 = "a".repeat(BoardConstants.RACK_SIZE + 2);
-    private final static String RACK_STRING_4 = "--42!--";
-    private final static String RACK_STRING_5 = "";
 
-    private final static Tile TILE_1 = TileFactory.getTile('a');
-    private final static Tile TILE_2 = TileFactory.getTile('b');
-    private final static Tile TILE_3 = TileFactory.getTile('x');
+    private static final String RACK_STRING_EMPTY = "";
+    private static final String RACK_STRING_SIMPLE = "ABCDE";
+    private static final String RACK_STRING_LONG = "A".repeat(GameConstants.RACK_SIZE + 1);
+    private static final String RACK_STRING_INVALID = "ABcD1!"; // lowercase and invalid chars
 
     @Test
-    void testCreateFromString() {
-        Rack rack1 = Rack.createFromString(RACK_STRING_1);
-        Rack rack2 = Rack.createFromString(RACK_STRING_1);
-        Rack rack3 = Rack.createFromString(RACK_STRING_2);
+    void testFromString() {
+        // Normal racks
+        Rack rack1 = Rack.fromString(RACK_STRING_SIMPLE);
+        Rack rack2 = Rack.fromString(RACK_STRING_SIMPLE);
+        Rack rack3 = Rack.fromString("ABCDEF");
 
         assertEquals(rack1, rack2);
-        assertNotEquals(rack2, rack3);
+        assertNotEquals(rack1, rack3);
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            Rack.createFromString(RACK_STRING_3);
-        });
-        assertThrows(IllegalArgumentException.class, () -> {
-            Rack.createFromString(RACK_STRING_4);
-        });
-        assertDoesNotThrow(() -> {
-            Rack.createFromString(RACK_STRING_5);
-        });
-    }
+        // Too long rack should throw
+        assertThrows(IllegalArgumentException.class, () -> Rack.fromString(RACK_STRING_LONG));
 
-    @Test
-    void testGetRacks() {
-        Rack rack = Rack.createFromString(RACK_STRING_1);
-        List<Tile> tiles = rack.getTiles();
-        assertTrue(tiles.contains(TILE_1));
-        assertTrue(tiles.contains(TILE_2));
-        assertFalse(tiles.contains(TILE_3));
-    }
+        // Invalid characters (lowercase, symbols, digits) should throw
+        assertThrows(IllegalArgumentException.class, () -> Rack.fromString(RACK_STRING_INVALID));
 
-    @Test
-    void testLetters() {
-        Rack rack = Rack.createFromString(RACK_STRING_1);
-        String letters = rack.letters();
-
-        List<Character> expectedList = "ACEDB".chars()
-                .mapToObj(c -> (char) c)
-                .collect(Collectors.toList());
-
-        for (int i = 0; i < letters.length(); i++) {
-            Character letter = letters.charAt(i);
-            assertTrue(expectedList.remove(letter));
-        }
-
-        assertTrue(expectedList.isEmpty());
-    }
-
-    @Test
-    void testRemoveTiles() {
-        Rack rack = Rack.createFromString(RACK_STRING_1);
-
-        assertEquals(Rack.createFromString("ade"), rack.removeTiles("bc"));
-        assertEquals(Rack.createFromString(""), rack.removeTiles("abcde"));
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            rack.removeTiles("x");
-        });
-        assertThrows(IllegalArgumentException.class, () -> {
-            rack.removeTiles("aa");
-        });
+        // Empty rack should succeed
+        assertDoesNotThrow(() -> Rack.fromString(RACK_STRING_EMPTY));
     }
 
     @Test
     void testAddTiles() {
-        Rack rack = Rack.createFromString(RACK_STRING_1);
+        Rack rack = Rack.fromString("ABC");
+        char[] toAdd = { 'D', 'E' };
+        Rack newRack = rack.addTiles(toAdd);
+        assertEquals(5, newRack.size());
 
-        List<Tile> tiles = new ArrayList<>();
+        // Adding too many tiles should throw
+        char[] tooMany = new char[GameConstants.RACK_SIZE + 1];
+        Arrays.fill(tooMany, 'A');
+        assertThrows(IllegalArgumentException.class, () -> rack.addTiles(tooMany));
+    }
 
-        tiles.add(TILE_1);
-        assertEquals(Rack.createFromString("abcdea"), rack.addTiles(tiles));
+    @Test
+    void testRemoveTiles() {
+        Rack rack = Rack.fromString("ABCDE");
 
-        tiles.remove(TILE_1);
-        tiles.add(TILE_3);
-        tiles.add(TILE_3);
-        assertEquals(Rack.createFromString("abcdexx"), rack.addTiles(tiles));
+        Rack afterRemove = rack.removeTiles(new char[] { 'B', 'C' });
+        assertEquals(3, afterRemove.size());
 
-        tiles.add(TILE_3); // Too large
-        assertThrows(IllegalArgumentException.class, () -> {
-            rack.addTiles(tiles);
-        });
+        Rack emptyRack = rack.removeTiles(new char[] { 'A', 'B', 'C', 'D', 'E' });
+        assertTrue(emptyRack.isEmpty());
+
+        // Removing tile not present should throw
+        assertThrows(IllegalStateException.class, () -> afterRemove.removeTiles(new char[] { 'X' }));
+
+        // Removing more than available should throw
+        assertThrows(IllegalStateException.class, () -> afterRemove.removeTiles(new char[] { 'B' }));
+    }
+
+    @Test
+    void testDrawFromBag() {
+        Bag bag = Bag.fromString("ABCDEF");
+        Rack rack = Rack.fromString("AB");
+
+        DrawHandler handler = rack.drawFrom(bag);
+        Rack newRack = handler.rack();
+        Bag newBag = handler.bag();
+
+        // Rack should not exceed max size
+        assertTrue(newRack.size() <= GameConstants.RACK_SIZE);
+
+        // Bag size should decrease correctly
+        assertEquals(bag.size() - (newRack.size() - rack.size()), newBag.size());
+
+        // Frequency map must be valid
+        for (byte b : newRack.getFrequencyMap()) {
+            assertTrue(b >= 0);
+        }
+    }
+
+    @Test
+    void testSizeAndIsEmpty() {
+        Rack emptyRack = Rack.emptyRack();
+        assertEquals(0, emptyRack.size());
+        assertTrue(emptyRack.isEmpty());
+
+        Rack rack = Rack.fromString("ABC");
+        assertEquals(3, rack.size());
+        assertFalse(rack.isEmpty());
+    }
+
+    @Test
+    void testEqualsAndHashCode() {
+        Rack rack1 = Rack.fromString("ABC");
+        Rack rack2 = Rack.fromString("ABC");
+        Rack rack3 = Rack.fromString("ABD");
+
+        assertEquals(rack1, rack2);
+        assertEquals(rack1.hashCode(), rack2.hashCode());
+        assertNotEquals(rack1, rack3);
+    }
+
+    @Test
+    void testToString() {
+        Rack rack = Rack.fromString("ABC");
+        String str = rack.toString();
+        assertTrue(str.contains("A"));
+        assertTrue(str.contains("B"));
+        assertTrue(str.contains("C"));
     }
 }

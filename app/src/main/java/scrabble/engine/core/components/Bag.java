@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Random;
 
 import scrabble.engine.util.game.BagConstants;
-
 import scrabble.engine.util.game.BagConstants.LetterData;
 
 public final class Bag {
@@ -39,7 +38,7 @@ public final class Bag {
         return new Bag(frequencyMap, size);
     }
 
-    public static Bag createFromString(String letters) {
+    public static Bag fromString(String letters) {
         int length = letters.length();
         if (length > BagConstants.TILE_COUNT) {
             throw new IllegalArgumentException(

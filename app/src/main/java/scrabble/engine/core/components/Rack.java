@@ -23,11 +23,11 @@ public final class Rack {
         return new Rack();
     }
 
-    public static Rack createFromString(String letters) {
+    public static Rack fromString(String letters) {
         int length = letters.length();
-        if (length > BagConstants.TILE_COUNT) {
+        if (length > GameConstants.RACK_SIZE) {
             throw new IllegalArgumentException(
-                    "String cannot contain more than " + BagConstants.TILE_COUNT + " letters. It currently contains "
+                    "String cannot contain more than " + GameConstants.RACK_SIZE + " letters. It currently contains "
                             + length + ".");
         }
 

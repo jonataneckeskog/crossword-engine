@@ -1,83 +1,113 @@
 package scrabble.engine.core.components;
 
 import org.junit.jupiter.api.Test;
-
-import scrabble.engine.util.game.BoardConstants;
+import scrabble.engine.util.game.BagConstants;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class BagTest {
-    private final static String BAG_STRING_1 = "abcde";
-    private final static String BAG_STRING_2 = "abcdefg";
-    private final static String BAG_STRING_3 = "a".repeat(BoardConstants.TILE_COUNT + 2);
-    private final static String BAG_STRING_4 = "--42!--";
-    private final static String BAG_STRING_5 = "";
 
-    private final static Tile TILE_1 = TileFactory.getTile('a');
-    private final static Tile TILE_2 = TileFactory.getTile('b');
-    private final static Tile TILE_3 = TileFactory.getTile('x');
+    private static final String BAG_STRING_1 = "ABCDE";
+    private static final String BAG_STRING_2 = "ABCDEFG";
+    private static final String BAG_STRING_3 = "A".repeat(BagConstants.TILE_COUNT + 2);
+    private static final String BAG_STRING_4 = "--42!--";
+    private static final String BAG_STRING_5 = "";
+    private static final String BAG_STRING_6 = "ABC";
 
     @Test
-    void testCreateFromString() {
-        Bag_Copy bag1 = Bag_Copy.createFromString(BAG_STRING_1);
-        Bag_Copy bag2 = Bag_Copy.createFromString(BAG_STRING_1);
-        Bag_Copy bag3 = Bag_Copy.createFromString(BAG_STRING_2);
+    void testFromString() {
+        Bag bag1 = Bag.fromString(BAG_STRING_1);
+        Bag bag2 = Bag.fromString(BAG_STRING_1);
+        Bag bag3 = Bag.fromString(BAG_STRING_2);
 
         assertEquals(bag1, bag2);
         assertNotEquals(bag1, bag3);
 
+        assertThrows(IllegalArgumentException.class, () -> Bag.fromString(BAG_STRING_3));
+        assertThrows(IllegalArgumentException.class, () -> Bag.fromString(BAG_STRING_4));
+        assertDoesNotThrow(() -> Bag.fromString(BAG_STRING_5));
+
         assertThrows(IllegalArgumentException.class, () -> {
-            Bag_Copy.createFromString(BAG_STRING_3);
+            Bag.fromString("abc"); // Lower case represents blanks in other parts of the project,
+            // so bag should be forced to use Upper Case only.
         });
-        assertThrows(IllegalArgumentException.class, () -> {
-            Bag_Copy.createFromString(BAG_STRING_4);
-        });
-        assertDoesNotThrow(() -> {
-            Bag_Copy.createFromString(BAG_STRING_5);
-        });
-    }
-
-    @Test
-    void testGetBags() {
-        Bag_Copy bag = Bag_Copy.createFromString(BAG_STRING_1);
-        List<Tile> tiles = bag.getTiles();
-        assertTrue(tiles.contains(TILE_1));
-        assertTrue(tiles.contains(TILE_2));
-        assertFalse(tiles.contains(TILE_3));
-    }
-
-    @Test
-    void testLetters() {
-        Bag_Copy bag = Bag_Copy.createFromString(BAG_STRING_1);
-        String letters = bag.letters();
-
-        List<Character> expectedList = "ACEDB".chars()
-                .mapToObj(c -> (char) c)
-                .collect(Collectors.toList());
-
-        for (int i = 0; i < letters.length(); i++) {
-            Character letter = letters.charAt(i);
-            assertTrue(expectedList.remove(letter));
-        }
-
-        assertTrue(expectedList.isEmpty());
     }
 
     @Test
     void testDrawTiles() {
-        Bag_Copy bag1 = Bag_Copy.createFromString(BAG_STRING_1);
-        Bag_Copy bag2 = Bag_Copy.createFromString("hk").drawTiles(1).bag();
+        Bag bag = Bag.fromString(BAG_STRING_1);
+        int originalSize = bag.size();
 
-        assertEquals(Bag_Copy.createFromString(BAG_STRING_5), bag1.drawTiles(5).bag());
-        assertEquals(Bag_Copy.createFromString(BAG_STRING_1), bag1.drawTiles(0).bag());
+        // Draw some tiles
+        int drawCount = 3;
+        DrawResult result = bag.drawTiles(drawCount);
 
-        assertTrue(bag2.equals(Bag_Copy.createFromString("h")) || bag2.equals(Bag_Copy.createFromString("k")));
+        assertEquals(originalSize - drawCount, result.bag().size());
+        assertEquals(drawCount, result.drawnTiles().length);
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            bag1.drawTiles(8);
-        });
+        // All drawn tiles should be valid
+        for (char t : result.drawnTiles()) {
+            assertTrue(BAG_STRING_1.indexOf(t) >= 0, "Drawn tile must be in original bag");
+        }
+
+        // Drawing 0 tiles should return identical bag
+        DrawResult zeroDraw = bag.drawTiles(0);
+        assertEquals(bag, zeroDraw.bag());
+        assertEquals(0, zeroDraw.drawnTiles().length);
+
+        // Drawing more than available should throw
+        assertThrows(IllegalArgumentException.class, () -> bag.drawTiles(originalSize + 1));
+    }
+
+    @Test
+    void testRemoveTiles() {
+        Bag bag = Bag.fromString("AABBCC");
+        Bag bagAfter = bag.removeTiles(new char[] { 'A', 'B' });
+        assertEquals(4, bagAfter.size());
+
+        // Removing unavailable tile should throw
+        assertThrows(IllegalStateException.class, () -> bagAfter.removeTiles(new char[] { 'Z' }));
+    }
+
+    @Test
+    void testStandardBag() {
+        Bag standard = Bag.standardBag();
+        int totalCount = 0;
+        for (byte b : standard.getFrequencyMap()) {
+            totalCount += b & 0xFF; // convert to unsigned
+        }
+        assertEquals(BagConstants.TILE_COUNT, totalCount);
+        assertFalse(standard.isEmpty());
+    }
+
+    @Test
+    void testEqualsAndHashCode() {
+        Bag bag1 = Bag.fromString(BAG_STRING_1);
+        Bag bag2 = Bag.fromString(BAG_STRING_1);
+        Bag bag3 = Bag.fromString("ABCD");
+
+        assertEquals(bag1, bag2);
+        assertEquals(bag1.hashCode(), bag2.hashCode());
+        assertNotEquals(bag1, bag3);
+    }
+
+    @Test
+    void testToString() {
+        Bag bag = Bag.fromString(BAG_STRING_6);
+        String str = bag.toString();
+        assertTrue(str.contains("A"));
+        assertTrue(str.contains("B"));
+        assertTrue(str.contains("C"));
+    }
+
+    @Test
+    void testIsEmptyAndSize() {
+        Bag emptyBag = Bag.fromString("");
+        assertTrue(emptyBag.isEmpty());
+        assertEquals(0, emptyBag.size());
+
+        Bag bag = Bag.fromString(BAG_STRING_6);
+        assertFalse(bag.isEmpty());
+        assertEquals(3, bag.size());
     }
 }

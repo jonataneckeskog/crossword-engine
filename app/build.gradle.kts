@@ -34,7 +34,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "scrabble.engine.App"
+    mainClass = "scrabble.App"
 }
 
 tasks.named<Test>("test") {

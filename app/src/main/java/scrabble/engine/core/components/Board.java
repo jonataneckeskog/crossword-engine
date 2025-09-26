@@ -3,10 +3,10 @@ package scrabble.engine.core.components;
 import java.util.Arrays;
 
 import scrabble.engine.core.Move;
-import scrabble.engine.util.game.BagConstants;
-import scrabble.engine.util.game.BagConstants.LetterData;
-import scrabble.engine.util.game.BoardConstants;
-import scrabble.engine.util.game.GameConstants;
+import scrabble.engine.rules.game.BagConstants;
+import scrabble.engine.rules.game.BoardConstants;
+import scrabble.engine.rules.game.GameConstants;
+import scrabble.engine.rules.game.BagConstants.LetterData;
 
 public final class Board {
     private final char[] board;

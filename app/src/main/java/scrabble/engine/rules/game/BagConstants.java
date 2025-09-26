@@ -1,4 +1,4 @@
-package scrabble.engine.util.game;
+package scrabble.engine.rules.game;
 
 import java.util.Map;
 

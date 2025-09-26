@@ -1,4 +1,4 @@
-package scrabble.engine.util.game;
+package scrabble.engine.rules.game;
 
 public final class GameConstants {
     private GameConstants() {

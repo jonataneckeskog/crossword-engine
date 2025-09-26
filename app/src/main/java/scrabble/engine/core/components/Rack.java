@@ -1,9 +1,9 @@
 package scrabble.engine.core.components;
 
-import scrabble.engine.util.game.BagConstants;
-import scrabble.engine.util.game.GameConstants;
-
 import java.util.Arrays;
+
+import scrabble.engine.rules.game.BagConstants;
+import scrabble.engine.rules.game.GameConstants;
 
 public final class Rack {
     private final byte[] frequencyMap;

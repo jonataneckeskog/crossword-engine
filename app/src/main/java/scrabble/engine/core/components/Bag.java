@@ -6,8 +6,8 @@ import java.util.Arrays;
 
 import java.util.Random;
 
-import scrabble.engine.util.game.BagConstants;
-import scrabble.engine.util.game.BagConstants.LetterData;
+import scrabble.engine.rules.game.BagConstants;
+import scrabble.engine.rules.game.BagConstants.LetterData;
 
 public final class Bag {
     private final byte[] frequencyMap;

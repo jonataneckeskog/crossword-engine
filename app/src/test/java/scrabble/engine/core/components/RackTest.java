@@ -1,7 +1,8 @@
 package scrabble.engine.core.components;
 
 import org.junit.jupiter.api.Test;
-import scrabble.engine.util.game.GameConstants;
+
+import scrabble.engine.rules.game.GameConstants;
 
 import static org.junit.jupiter.api.Assertions.*;
 

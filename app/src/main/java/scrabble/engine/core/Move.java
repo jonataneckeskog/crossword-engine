@@ -3,7 +3,7 @@ package scrabble.engine.core;
 import java.util.function.BiConsumer;
 import scrabble.engine.core.components.Position;
 import scrabble.engine.core.components.Position.Step;
-import scrabble.engine.util.game.BoardConstants;
+import scrabble.engine.rules.game.BoardConstants;
 
 public class Move {
     private final Position[] positions;

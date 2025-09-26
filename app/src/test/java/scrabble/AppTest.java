@@ -5,8 +5,6 @@ package scrabble;
 
 import org.junit.jupiter.api.Test;
 
-import scrabble.App;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class AppTest {

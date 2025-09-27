@@ -63,6 +63,10 @@ public final class GameState {
         return new GameState(newBoard, newBag, newRacks, newScores, newPlayerTurn);
     }
 
+    public boolean isGameOver() {
+        return bag.isEmpty() && (racks[0].isEmpty() || racks[1].isEmpty());
+    }
+
     // Getters
     public Board getBoard() {
         return board;

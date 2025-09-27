@@ -5,7 +5,7 @@ import scrabble.core.PlayerView;
 public class StandardEvaluator implements Evaluator {
 
     @Override
-    public int evaluate(PlayerView playerView) {
+    public int evaluate(GameState gameState) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'evaluate'");
     }

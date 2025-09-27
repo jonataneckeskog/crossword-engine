@@ -1,7 +1,7 @@
 package scrabble.engine;
 
-import scrabble.core.PlayerView;
+import scrabble.core.GameState;
 
 public interface Evaluator {
-    int evaluate(PlayerView playerView);
+    int evaluate(GameState gameState);
 }

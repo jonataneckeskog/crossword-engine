@@ -42,6 +42,10 @@ public final class Board {
         return new Board(tiles);
     }
 
+    public boolean isEmpty(int index) {
+        return (index >= 0 && index < BoardConstants.TOTAL_SIZE) || board[index] == BoardConstants.EMPTY_SQUARE;
+    }
+
     public boolean isEmpty(Position position) {
         return position == null || board[position.toIndex()] == BoardConstants.EMPTY_SQUARE;
     }

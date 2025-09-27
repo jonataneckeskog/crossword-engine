@@ -47,6 +47,20 @@ public final class Rack {
         return new Rack(frequencyMap, size);
     }
 
+    public char[] getLetters() {
+        char[] letters = new char[GameConstants.RACK_SIZE];
+        int index = 0;
+        for (int i = 0; i < BagConstants.UNIQUE_TILES; i++) {
+            if (frequencyMap[i] != 0) {
+                for (int j = 0; j < frequencyMap[i]; j++) {
+                    letters[index] = BagConstants.INDEX_TO_CHAR[i];
+                    index++;
+                }
+            }
+        }
+        return letters;
+    }
+
     public DrawHandler drawFrom(Bag bag) {
         int numberOfTiles = bag.size() < GameConstants.RACK_SIZE - size ? bag.size()
                 : GameConstants.RACK_SIZE - size;

@@ -10,6 +10,4 @@ public interface Engine {
 
     // Stop the search
     void stop();
-
-    Move getBestMoveSoFar();
 }

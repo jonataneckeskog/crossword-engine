@@ -1,6 +1,6 @@
 package scrabble.engine;
 
-import scrabble.core.PlayerView;
+import scrabble.core.GameState;
 
 public class StandardEvaluator implements Evaluator {
 

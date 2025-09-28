@@ -53,14 +53,18 @@ public final class GameState {
 
         Board newBoard = board.placeWord(move);
 
-        DrawHandler makeDraw = racks[playerTurn].drawFrom(bag);
-        Bag newBag = makeDraw.bag();
-        Rack[] newRacks = racks.clone();
-        newRacks[playerTurn] = makeDraw.rack();
-
         int newPlayerTurn = playerTurn == 0 ? 1 : 0;
 
-        return new GameState(newBoard, newBag, newRacks, newScores, newPlayerTurn);
+        return new GameState(newBoard, bag, racks.clone(), newScores, newPlayerTurn);
+    }
+
+    public GameState drawNewTiles() {
+        DrawHandler drawResult = racks[playerTurn].drawFrom(bag);
+        Bag newBag = drawResult.bag();
+        Rack[] newRacks = racks.clone();
+        newRacks[playerTurn] = drawResult.rack();
+
+        return new GameState(board, newBag, newRacks, scores.clone(), playerTurn);
     }
 
     public boolean isGameOver() {

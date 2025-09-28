@@ -42,8 +42,17 @@ public final class Board {
         return new Board(tiles);
     }
 
+    public boolean isOutOfBounds(int index) {
+        return (index < 0 && index >= BoardConstants.TOTAL_SIZE);
+    }
+
+    public boolean isOutOfBounds(Position position) {
+        return (position.row() < 0 || position.row() >= BoardConstants.SIZE || position.column() < 0
+                || position.column() >= BoardConstants.SIZE);
+    }
+
     public boolean isEmpty(int index) {
-        return (index >= 0 && index < BoardConstants.TOTAL_SIZE) || board[index] == BoardConstants.EMPTY_SQUARE;
+        return board[index] == BoardConstants.EMPTY_SQUARE;
     }
 
     public boolean isEmpty(Position position) {

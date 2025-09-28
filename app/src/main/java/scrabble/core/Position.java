@@ -1,26 +1,22 @@
 package scrabble.core;
 
 import scrabble.rules.game.BoardConstants;
+import scrabble.core.components.Board;
 
 public record Position(int row, int column) {
     private static final int SIZE = BoardConstants.SIZE;
 
-    public Position {
-        if (row < 0 || row >= SIZE || column < 0 || column >= SIZE) {
-            throw new IllegalArgumentException(
-                    "Position " + row + "/" + column + " (row/column) is out of bounds for board size " + SIZE);
-        }
+    public Position step(Step step) {
+        return new Position(row + step.deltaRow(), column + step.deltaColumn());
     }
 
     // Safe step, returns null if outside the board
-    public Position tryStep(Step step) {
-        int newRow = row + step.deltaRow();
-        int newCol = column + step.deltaCol();
-
-        if (newRow < 0 || newRow >= SIZE || newCol < 0 || newCol >= SIZE) {
+    public Position tryStep(Step step, Board board) {
+        Position newPosition = step(step);
+        if (board.isOutOfBounds(newPosition)) {
             return null;
         }
-        return new Position(newRow, newCol);
+        return newPosition;
     }
 
     public int toIndex() {
@@ -45,7 +41,7 @@ public record Position(int row, int column) {
             return dRow;
         }
 
-        public int deltaCol() {
+        public int deltaColumn() {
             return dCol;
         }
 

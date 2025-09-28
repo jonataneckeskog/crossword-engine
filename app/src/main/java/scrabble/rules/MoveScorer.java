@@ -37,8 +37,8 @@ public final class MoveScorer {
         Position.Step reverseOtherStep = Position.Step.reverseStep(otherStep);
 
         for (Position pos : positions) {
-            Position neighbor1 = pos.tryStep(otherStep);
-            Position neighbor2 = pos.tryStep(reverseOtherStep);
+            Position neighbor1 = pos.tryStep(otherStep, board);
+            Position neighbor2 = pos.tryStep(reverseOtherStep, board);
 
             if ((neighbor1 != null && !board.isEmpty(neighbor1)) ||
                     (neighbor2 != null && !board.isEmpty(neighbor2))) {
@@ -74,7 +74,7 @@ public final class MoveScorer {
             }
 
             wordScore += tileScore;
-            pos = pos.tryStep(step);
+            pos = pos.tryStep(step, board);
         }
 
         return wordScore * wordMultiplier;
@@ -91,11 +91,11 @@ public final class MoveScorer {
 
     private static Position findWordStart(Board board, Position pos, Position.Step step) {
         Position prev = pos;
-        Position current = pos.tryStep(step);
+        Position current = pos.tryStep(step, board);
 
         while (current != null && !board.isEmpty(current)) {
             prev = current;
-            current = current.tryStep(step);
+            current = current.tryStep(step, board);
         }
 
         return prev;

@@ -1,8 +1,5 @@
 package scrabble.rules;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public final class Trie {
     private final TrieNode root;
 
@@ -10,7 +7,7 @@ public final class Trie {
         root = new TrieNode(false);
     }
 
-    /** Insert a word into the trie */
+    // Insert a word into the trie
     public void insert(String word) {
         TrieNode current = root;
         for (int i = 0, n = word.length(); i < n; i++) {
@@ -18,8 +15,12 @@ public final class Trie {
             boolean isWord = (i == n - 1);
 
             // Reuse existing node if present
-            current.children.putIfAbsent(c, new TrieNode(false));
-            current = current.children.get(c);
+            TrieNode next = current.getChild(c);
+            if (next == null) {
+                next = new TrieNode(false);
+                current.setChild(c, next);
+            }
+            current = next;
 
             // Only mark the last node as a word
             if (isWord) {
@@ -28,36 +29,31 @@ public final class Trie {
         }
     }
 
-    /** Check if a word exists in the trie */
+    // Check if a word exists in the trie
     public boolean containsWord(String word) {
         TrieNode current = root;
         for (int i = 0, n = word.length(); i < n; i++) {
-            TrieNode next = current.children.get(word.charAt(i));
-            if (next == null) {
+            current = current.getChild(word.charAt(i));
+            if (current == null) {
                 return false;
             }
-            current = next;
         }
         return current.isWord;
     }
 
-    public boolean containsPrefix(String prefix) {
+    // Check if a prefix exists in the trie
+    public boolean containsPrefix(char[] prefix) {
         TrieNode current = root;
-        for (int i = 0; i < prefix.length(); i++) {
-            current = current.children.get(prefix.charAt(i));
-            if (current == null)
+        for (char c : prefix) {
+            current = current.getChild(c);
+            if (current == null) {
                 return false;
+            }
         }
         return true;
     }
 
-    /** Inner node class */
-    private static final class TrieNode {
-        private final Map<Character, TrieNode> children = new HashMap<>();
-        private boolean isWord;
-
-        TrieNode(boolean isWord) {
-            this.isWord = isWord;
-        }
+    public TrieNode getRoot() {
+        return root;
     }
 }

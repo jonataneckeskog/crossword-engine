@@ -3,7 +3,7 @@ package scrabble.engine;
 import scrabble.core.Move;
 import scrabble.core.GameState;
 import scrabble.core.PlayerView;
-import scrabble.rules.AdvancedDictionary;
+import scrabble.rules.TrieDictionary;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -15,11 +15,11 @@ import java.util.Set;
 import java.util.Iterator;
 
 public class EvaluatingEngine implements Engine {
-    private AdvancedDictionary dictionary;
+    private TrieDictionary dictionary;
     private Evaluator evaluator;
     private boolean isActive = true;
 
-    public EvaluatingEngine(AdvancedDictionary dictionary, Evaluator evaluator) {
+    public EvaluatingEngine(TrieDictionary dictionary, Evaluator evaluator) {
         this.dictionary = dictionary;
         this.evaluator = evaluator;
     }

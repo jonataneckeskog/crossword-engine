@@ -42,6 +42,20 @@ public final class Board {
         return new Board(tiles);
     }
 
+    public boolean isAnchor(Position position) {
+        if (!isEmpty(position.toIndex()))
+            return false;
+        if (!isEmpty(position.tryStep(Position.Step.UP, this)))
+            return true;
+        if (!isEmpty(position.tryStep(Position.Step.DOWN, this)))
+            return true;
+        if (!isEmpty(position.tryStep(Position.Step.LEFT, this)))
+            return true;
+        if (!isEmpty(position.tryStep(Position.Step.RIGHT, this)))
+            return true;
+        return false;
+    }
+
     public boolean isOutOfBounds(int index) {
         return (index < 0 || index >= BoardConstants.TOTAL_SIZE);
     }
@@ -65,6 +79,10 @@ public final class Board {
 
     public char tileAt(Position position) {
         return board[position.toIndex()];
+    }
+
+    public char[] getBoard() {
+        return board.clone();
     }
 
     public Board placeWord(Move move) {

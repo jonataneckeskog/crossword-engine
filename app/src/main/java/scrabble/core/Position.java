@@ -4,7 +4,9 @@ import scrabble.rules.game.BoardConstants;
 import scrabble.core.components.Board;
 
 public record Position(int row, int column) {
-    private static final int SIZE = BoardConstants.SIZE;
+    public static Position fromIndex(int index) {
+        return new Position(index / BoardConstants.SIZE, index % BoardConstants.SIZE);
+    }
 
     public Position step(Step step) {
         return new Position(row + step.deltaRow(), column + step.deltaColumn());
@@ -20,7 +22,7 @@ public record Position(int row, int column) {
     }
 
     public int toIndex() {
-        return row * SIZE + column;
+        return row * BoardConstants.SIZE + column;
     }
 
     public enum Step {

@@ -43,7 +43,7 @@ public final class Board {
     }
 
     public boolean isOutOfBounds(int index) {
-        return (index < 0 && index >= BoardConstants.TOTAL_SIZE);
+        return (index < 0 || index >= BoardConstants.TOTAL_SIZE);
     }
 
     public boolean isOutOfBounds(Position position) {
@@ -56,7 +56,7 @@ public final class Board {
     }
 
     public boolean isEmpty(Position position) {
-        return position == null || board[position.toIndex()] == BoardConstants.EMPTY_SQUARE;
+        return board[position.toIndex()] == BoardConstants.EMPTY_SQUARE;
     }
 
     public char tileAt(int index) {

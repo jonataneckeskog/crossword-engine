@@ -58,10 +58,10 @@ public final class GameState {
         if (validate && !MoveValidator.isValid(board, move))
             return this;
 
+        Board newBoard = board.placeWord(move);
+
         int[] newScores = scores.clone();
         newScores[playerId] += MoveScorer.score(board, move);
-
-        Board newBoard = board.placeWord(move);
 
         return new GameState(newBoard, bag, racks.clone(), newScores, false);
     }

@@ -1,17 +1,17 @@
 package scrabble.engine;
 
 import scrabble.core.Move;
+import scrabble.core.components.Rack;
 import scrabble.core.GameState;
 import scrabble.core.PlayerView;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.Iterator;
+import java.util.HashMap;
 
 public class EvaluatingEngine implements Engine {
     private Evaluator evaluator;
@@ -27,29 +27,30 @@ public class EvaluatingEngine implements Engine {
         // Map to track cumulative evaluations for each move
         Map<Move, Double> moveEvaluations = new LinkedHashMap<>();
 
-        // Create an iterator of GameStates
-        Iterator<GameState> gameStateIterator = GameStateSimulator.stream(playerView).iterator();
+        // Create an iterator of potential opponent Racks
+        Iterator<Rack> rackIterator = RackSimulator.stream(playerView).iterator();
 
         // Generate a batch of 10 GameStates to be used for early evaluation (quick
         // eval)
         int initialBatchSize = 10;
-        List<GameState> firstBatchStates = new ArrayList<>();
-        for (int i = 0; i < initialBatchSize && gameStateIterator.hasNext(); i++) {
-            firstBatchStates.add(gameStateIterator.next());
+        List<Rack> firstBatchStates = new ArrayList<>();
+        for (int i = 0; i < initialBatchSize && rackIterator.hasNext(); i++) {
+            firstBatchStates.add(rackIterator.next());
         }
         int processedStates = initialBatchSize;
 
         // Start processing the original batch, break immidiately if time runs out
-        Set<Move> moveSet = new LinkedHashSet<>();
+        Map<Move, PlayerView> moveMap = new HashMap<>();
         MoveGenerator.streamLegalMoves(playerView)
                 .takeWhile(move -> isActive && System.currentTimeMillis() - startTime < maxTimeMillis)
                 .forEach(move -> {
-                    moveSet.add(move);
+                    PlayerView newPlayerView = playerView.applyMove(move);
+                    moveMap.put(move, newPlayerView);
 
                     double totalEval = 0;
-                    for (GameState state : firstBatchStates) {
-                        GameState newState = state.applyMove(move, false);
-                        totalEval += evaluator.evaluate(newState);
+                    for (Rack rack : firstBatchStates) {
+                        GameState newGameState = GameState.fromPlayerView(newPlayerView, rack);
+                        totalEval += evaluator.evaluate(newGameState);
                     }
 
                     double averageEval = totalEval / firstBatchStates.size();
@@ -61,15 +62,12 @@ public class EvaluatingEngine implements Engine {
                     }
                 });
 
-        // Cache all moves
-        List<Move> allMoves = new ArrayList<>(moveSet);
+        while (rackIterator.hasNext() && isActive && System.currentTimeMillis() - startTime < maxTimeMillis) {
 
-        while (gameStateIterator.hasNext() && isActive && System.currentTimeMillis() - startTime < maxTimeMillis) {
+            Rack rack = rackIterator.next();
 
-            GameState state = gameStateIterator.next();
-
-            for (Move move : allMoves) {
-                GameState newState = state.applyMove(move, false);
+            for (Move move : moveMap.keySet()) {
+                GameState newState = GameState.fromPlayerView(moveMap.get(move), rack);
                 double eval = evaluator.evaluate(newState);
 
                 // Update running average for this move
@@ -83,7 +81,7 @@ public class EvaluatingEngine implements Engine {
             // Update listener with average evaluations
             if (listener != null) {
                 Map<Move, Double> avgEvaluations = new LinkedHashMap<>();
-                for (Move move : allMoves) {
+                for (Move move : moveMap.keySet()) {
                     avgEvaluations.put(move, moveEvaluations.get(move) / processedStates);
                 }
                 listener.update(avgEvaluations);

@@ -2,8 +2,8 @@ package scrabble.core;
 
 import scrabble.core.components.Bag;
 import scrabble.core.components.Board;
-import scrabble.core.components.DrawHandler;
 import scrabble.core.components.Rack;
+import scrabble.rules.MoveScorer;
 
 public final class PlayerView {
     private final Board board;
@@ -22,25 +22,15 @@ public final class PlayerView {
         this.isFirstMove = isFirstMove;
     }
 
-    public PlayerView applyMove(Move move, char[] specifiedDraw, int score) {
+    public PlayerView applyMove(Move move) {
         Board newBoard = board.placeWord(move);
 
-        Rack tempRack = rack;
-        Bag tempBag = bag;
-
-        if (specifiedDraw != null && specifiedDraw.length > 0) {
-            tempBag = tempBag.removeTiles(specifiedDraw);
-            tempRack = tempRack.addTiles(specifiedDraw);
-        }
-
-        DrawHandler drawResult = tempRack.drawFrom(tempBag);
-        Bag newBag = drawResult.bag();
-        Rack newRack = drawResult.rack();
+        Rack newRack = rack.removeTiles(move.getTiles());
 
         int[] newScores = scores.clone();
-        newScores[playerId] += score;
+        newScores[playerId] += MoveScorer.score(newBoard, move);
 
-        return new PlayerView(newBoard, newBag, newRack, newScores, playerId, false);
+        return new PlayerView(newBoard, bag, newRack, newScores, playerId, false);
     }
 
     public static PlayerView fromGameState(GameState gameState, int playerId) {

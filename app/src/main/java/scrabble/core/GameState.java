@@ -43,6 +43,17 @@ public final class GameState {
         return startState();
     }
 
+    public static GameState fromPlayerView(PlayerView playerView, Rack otherRack) {
+        Board board = playerView.getBoard();
+        int playerId = playerView.getPlayerId();
+
+        Bag newBag = playerView.getBag().removeTiles(otherRack.getLetters());
+        Rack[] newRacks = new Rack[2];
+        newRacks[playerId == 0 ? 0 : 1] = playerView.getRack();
+
+        return new GameState(board, newBag, newRacks, playerView.getScores(), playerView.isFirstMove());
+    }
+
     public GameState applyMove(Move move, boolean validate, int playerId) {
         if (validate && !MoveValidator.isValid(board, move))
             return this;
@@ -62,17 +73,6 @@ public final class GameState {
         newRacks[playerId] = drawResult.rack();
 
         return new GameState(board, newBag, newRacks, scores.clone(), false);
-    }
-
-    public GameState fromPlayerView(PlayerView playerView, Rack otherRack) {
-        Board board = playerView.getBoard();
-        int playerId = playerView.getPlayerId();
-
-        Bag newBag = playerView.getBag().removeTiles(otherRack.getLetters());
-        Rack[] newRacks = new Rack[2];
-        newRacks[playerId == 0 ? 0 : 1] = playerView.getRack();
-
-        return new GameState(board, newBag, newRacks, playerView.getScores(), playerView.isFirstMove());
     }
 
     public boolean isGameOver() {

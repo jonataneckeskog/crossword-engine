@@ -48,7 +48,7 @@ public class EvaluatingEngine implements Engine {
 
                     double totalEval = 0;
                     for (GameState state : firstBatchStates) {
-                        GameState newState = state.applyMove(move);
+                        GameState newState = state.applyMove(move, false);
                         totalEval += evaluator.evaluate(newState);
                     }
 
@@ -69,7 +69,7 @@ public class EvaluatingEngine implements Engine {
             GameState state = gameStateIterator.next();
 
             for (Move move : allMoves) {
-                GameState newState = state.applyMove(move);
+                GameState newState = state.applyMove(move, false);
                 double eval = evaluator.evaluate(newState);
 
                 // Update running average for this move

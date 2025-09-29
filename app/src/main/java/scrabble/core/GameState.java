@@ -16,7 +16,7 @@ public final class GameState {
     private final int playerTurn;
     private final boolean isFirstMove;
 
-    private GameState(Board board, Bag bag, Rack[] racks, int[] scores, int playerTurn, boolean isFirstMove) {
+    public GameState(Board board, Bag bag, Rack[] racks, int[] scores, int playerTurn, boolean isFirstMove) {
         this.board = board;
         this.bag = bag;
         this.racks = racks;
@@ -46,8 +46,8 @@ public final class GameState {
         return startState();
     }
 
-    public GameState applyMove(Move move) {
-        if (!MoveValidator.isValid(board, move))
+    public GameState applyMove(Move move, boolean validate) {
+        if (validate && !MoveValidator.isValid(board, move))
             return this;
 
         int[] newScores = scores.clone();

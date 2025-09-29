@@ -9,7 +9,7 @@ import scrabble.rules.game.BoardConstants;
 import scrabble.core.Position;
 
 public final class MoveValidator {
-    public static boolean isValid(Board board, Move move, TrieDictionary dictionary) {
+    public static boolean isValid(Board board, Move move) {
         // 1. Validate the move
         List<Position> positions = Arrays.asList(move.getPositions());
         if (positions.isEmpty()) {
@@ -55,6 +55,7 @@ public final class MoveValidator {
             }
         }
 
+        TrieDictionary dictionary = DictionaryProvider.get();
         for (char[] line : rows) {
             if (!isLineValid(line, dictionary))
                 return false;

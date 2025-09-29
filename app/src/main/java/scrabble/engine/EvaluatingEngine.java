@@ -3,7 +3,6 @@ package scrabble.engine;
 import scrabble.core.Move;
 import scrabble.core.GameState;
 import scrabble.core.PlayerView;
-import scrabble.rules.TrieDictionary;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -15,12 +14,10 @@ import java.util.Set;
 import java.util.Iterator;
 
 public class EvaluatingEngine implements Engine {
-    private TrieDictionary dictionary;
     private Evaluator evaluator;
     private boolean isActive = true;
 
-    public EvaluatingEngine(TrieDictionary dictionary, Evaluator evaluator) {
-        this.dictionary = dictionary;
+    public EvaluatingEngine(Evaluator evaluator) {
         this.evaluator = evaluator;
     }
 
@@ -44,7 +41,7 @@ public class EvaluatingEngine implements Engine {
 
         // Start processing the original batch, break immidiately if time runs out
         Set<Move> moveSet = new LinkedHashSet<>();
-        MoveGenerator.streamLegalMoves(playerView, dictionary)
+        MoveGenerator.streamLegalMoves(playerView)
                 .takeWhile(move -> isActive && System.currentTimeMillis() - startTime < maxTimeMillis)
                 .forEach(move -> {
                     moveSet.add(move);

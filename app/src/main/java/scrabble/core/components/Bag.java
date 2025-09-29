@@ -113,6 +113,25 @@ public final class Bag {
         return new Bag(newFrequencyMap, newSize);
     }
 
+    public Bag addTiles(char[] tiles) {
+        byte[] frequencyMap = this.frequencyMap.clone();
+        int size = this.size;
+
+        for (int i = 0, n = tiles.length; i < n; i++) {
+            frequencyMap[BagConstants.getIndex(tiles[i])]++;
+            size++;
+        }
+
+        if (size > BagConstants.TILE_COUNT)
+            throw new IllegalArgumentException(
+                    "Added too many tiles, rack maximum size is " + BagConstants.TILE_COUNT
+                            + " but it would have contained "
+                            + size
+                            + " tiles.");
+
+        return new Bag(frequencyMap, size);
+    }
+
     public int size() {
         return size;
     }

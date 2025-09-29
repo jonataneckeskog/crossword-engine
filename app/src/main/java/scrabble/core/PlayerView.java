@@ -10,12 +10,14 @@ public final class PlayerView {
     private final Bag bag;
     private final Rack rack;
     private final int[] scores;
+    private final boolean isFirstMove;
 
-    public PlayerView(Board board, Bag bag, Rack rack, int[] scores) {
+    public PlayerView(Board board, Bag bag, Rack rack, int[] scores, boolean isFirstMove) {
         this.board = board;
         this.bag = bag;
         this.rack = rack;
         this.scores = scores;
+        this.isFirstMove = isFirstMove;
     }
 
     public PlayerView applyMove(Move move, char[] specifiedDraw, int score, int playerTurn) {
@@ -36,12 +38,17 @@ public final class PlayerView {
         int[] newScores = scores.clone();
         newScores[playerTurn] += score;
 
-        return new PlayerView(newBoard, newBag, newRack, newScores);
+        return new PlayerView(newBoard, newBag, newRack, newScores, false);
     }
 
     public static PlayerView fromGameState(GameState gameState, int playerId) {
-        // TO-DO
-        return null;
+        Board newBoard = gameState.getBoard();
+
+        Rack[] oldRacks = gameState.getRacks();
+        Bag newBag = gameState.getBag().addTiles(oldRacks[playerId == 0 ? 1 : 0].getLetters());
+        Rack newRack = oldRacks[playerId];
+
+        return new PlayerView(newBoard, newBag, newRack, gameState.getScores(), gameState.isFirstMove());
     }
 
     // Getters
@@ -59,5 +66,9 @@ public final class PlayerView {
 
     public int[] getScores() {
         return scores.clone();
+    }
+
+    public boolean isFirstMove() {
+        return isFirstMove;
     }
 }

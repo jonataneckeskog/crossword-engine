@@ -14,13 +14,15 @@ public final class GameState {
     private final Rack[] racks;
     private final int[] scores;
     private final int playerTurn;
+    private final boolean isFirstMove;
 
-    private GameState(Board board, Bag bag, Rack[] racks, int[] scores, int playerTurn) {
+    private GameState(Board board, Bag bag, Rack[] racks, int[] scores, int playerTurn, boolean isFirstMove) {
         this.board = board;
         this.bag = bag;
         this.racks = racks;
         this.scores = scores.clone();
         this.playerTurn = playerTurn;
+        this.isFirstMove = isFirstMove;
     }
 
     public static GameState startState() {
@@ -36,7 +38,7 @@ public final class GameState {
         int playerTurn = 0;
 
         return new GameState(board, drawResult2.bag(), new Rack[] { drawResult1.rack(), drawResult2.rack() }, scores,
-                playerTurn);
+                playerTurn, true);
     }
 
     public static GameState stateFrom(String string) {
@@ -55,7 +57,7 @@ public final class GameState {
 
         int newPlayerTurn = playerTurn == 0 ? 1 : 0;
 
-        return new GameState(newBoard, bag, racks.clone(), newScores, newPlayerTurn);
+        return new GameState(newBoard, bag, racks.clone(), newScores, newPlayerTurn, false);
     }
 
     public GameState drawNewTiles() {
@@ -64,7 +66,7 @@ public final class GameState {
         Rack[] newRacks = racks.clone();
         newRacks[playerTurn] = drawResult.rack();
 
-        return new GameState(board, newBag, newRacks, scores.clone(), playerTurn);
+        return new GameState(board, newBag, newRacks, scores.clone(), playerTurn, false);
     }
 
     public boolean isGameOver() {
@@ -90,5 +92,9 @@ public final class GameState {
 
     public int getPlayerTurn() {
         return playerTurn;
+    }
+
+    public boolean isFirstMove() {
+        return isFirstMove;
     }
 }

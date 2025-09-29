@@ -10,17 +10,19 @@ public final class PlayerView {
     private final Bag bag;
     private final Rack rack;
     private final int[] scores;
+    private final int playerId;
     private final boolean isFirstMove;
 
-    public PlayerView(Board board, Bag bag, Rack rack, int[] scores, boolean isFirstMove) {
+    public PlayerView(Board board, Bag bag, Rack rack, int[] scores, int playerId, boolean isFirstMove) {
         this.board = board;
         this.bag = bag;
         this.rack = rack;
         this.scores = scores;
+        this.playerId = playerId;
         this.isFirstMove = isFirstMove;
     }
 
-    public PlayerView applyMove(Move move, char[] specifiedDraw, int score, int playerTurn) {
+    public PlayerView applyMove(Move move, char[] specifiedDraw, int score) {
         Board newBoard = board.placeWord(move);
 
         Rack tempRack = rack;
@@ -36,9 +38,9 @@ public final class PlayerView {
         Rack newRack = drawResult.rack();
 
         int[] newScores = scores.clone();
-        newScores[playerTurn] += score;
+        newScores[playerId] += score;
 
-        return new PlayerView(newBoard, newBag, newRack, newScores, false);
+        return new PlayerView(newBoard, newBag, newRack, newScores, playerId, false);
     }
 
     public static PlayerView fromGameState(GameState gameState, int playerId) {
@@ -48,7 +50,7 @@ public final class PlayerView {
         Bag newBag = gameState.getBag().addTiles(oldRacks[playerId == 0 ? 1 : 0].getLetters());
         Rack newRack = oldRacks[playerId];
 
-        return new PlayerView(newBoard, newBag, newRack, gameState.getScores(), gameState.isFirstMove());
+        return new PlayerView(newBoard, newBag, newRack, gameState.getScores(), playerId, gameState.isFirstMove());
     }
 
     // Getters
@@ -66,6 +68,10 @@ public final class PlayerView {
 
     public int[] getScores() {
         return scores.clone();
+    }
+
+    public int getPlayerId() {
+        return playerId;
     }
 
     public boolean isFirstMove() {

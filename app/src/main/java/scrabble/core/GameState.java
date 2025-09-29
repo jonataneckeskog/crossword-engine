@@ -13,15 +13,13 @@ public final class GameState {
     private final Bag bag;
     private final Rack[] racks;
     private final int[] scores;
-    private final int playerTurn;
     private final boolean isFirstMove;
 
-    public GameState(Board board, Bag bag, Rack[] racks, int[] scores, int playerTurn, boolean isFirstMove) {
+    public GameState(Board board, Bag bag, Rack[] racks, int[] scores, boolean isFirstMove) {
         this.board = board;
         this.bag = bag;
         this.racks = racks;
         this.scores = scores.clone();
-        this.playerTurn = playerTurn;
         this.isFirstMove = isFirstMove;
     }
 
@@ -35,10 +33,9 @@ public final class GameState {
         DrawHandler drawResult2 = rack2.drawFrom(drawResult1.bag());
 
         int[] scores = new int[] { 0, 0 };
-        int playerTurn = 0;
 
         return new GameState(board, drawResult2.bag(), new Rack[] { drawResult1.rack(), drawResult2.rack() }, scores,
-                playerTurn, true);
+                true);
     }
 
     public static GameState stateFrom(String string) {
@@ -46,27 +43,36 @@ public final class GameState {
         return startState();
     }
 
-    public GameState applyMove(Move move, boolean validate) {
+    public GameState applyMove(Move move, boolean validate, int playerId) {
         if (validate && !MoveValidator.isValid(board, move))
             return this;
 
         int[] newScores = scores.clone();
-        newScores[playerTurn] += MoveScorer.score(board, move);
+        newScores[playerId] += MoveScorer.score(board, move);
 
         Board newBoard = board.placeWord(move);
 
-        int newPlayerTurn = playerTurn == 0 ? 1 : 0;
-
-        return new GameState(newBoard, bag, racks.clone(), newScores, newPlayerTurn, false);
+        return new GameState(newBoard, bag, racks.clone(), newScores, false);
     }
 
-    public GameState drawNewTiles() {
-        DrawHandler drawResult = racks[playerTurn].drawFrom(bag);
+    public GameState drawNewTiles(int playerId) {
+        DrawHandler drawResult = racks[playerId].drawFrom(bag);
         Bag newBag = drawResult.bag();
         Rack[] newRacks = racks.clone();
-        newRacks[playerTurn] = drawResult.rack();
+        newRacks[playerId] = drawResult.rack();
 
-        return new GameState(board, newBag, newRacks, scores.clone(), playerTurn, false);
+        return new GameState(board, newBag, newRacks, scores.clone(), false);
+    }
+
+    public GameState fromPlayerView(PlayerView playerView, Rack otherRack) {
+        Board board = playerView.getBoard();
+        int playerId = playerView.getPlayerId();
+
+        Bag newBag = playerView.getBag().removeTiles(otherRack.getLetters());
+        Rack[] newRacks = new Rack[2];
+        newRacks[playerId == 0 ? 0 : 1] = playerView.getRack();
+
+        return new GameState(board, newBag, newRacks, playerView.getScores(), playerView.isFirstMove());
     }
 
     public boolean isGameOver() {
@@ -88,10 +94,6 @@ public final class GameState {
 
     public int[] getScores() {
         return scores.clone();
-    }
-
-    public int getPlayerTurn() {
-        return playerTurn;
     }
 
     public boolean isFirstMove() {

@@ -1,37 +1,37 @@
 package scrabble.engine;
 
-import scrabble.core.GameState;
 import scrabble.core.PlayerView;
+import scrabble.core.components.Bag;
+import scrabble.core.components.Rack;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class GameStateIterator implements Iterator<GameState> {
+public class RackIterator implements Iterator<Rack> {
     private PlayerView playerView;
-    private GameState nextState = null;
+    private Rack nextRack = null;
 
-    public GameStateIterator(PlayerView playerView) {
+    public RackIterator(PlayerView playerView) {
         this.playerView = playerView;
         advance();
     }
 
     private void advance() {
-        // TODO: derive the next GameState from playerView
-        // nextState = ...;
-        // if no more states, set nextState = null;
+        Bag newBag = playerView.getBag();
+        Rack[] newRacks = new Rack[2];
     }
 
     @Override
     public boolean hasNext() {
-        return nextState != null;
+        return nextRack != null;
     }
 
     @Override
-    public GameState next() {
+    public Rack next() {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
-        GameState current = nextState;
+        Rack current = nextRack;
         advance();
         return current;
     }

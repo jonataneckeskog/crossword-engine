@@ -14,31 +14,19 @@ public class LegalMoveIterator implements Iterator<Move> {
     private final Board board;
     private final char[] boardArray;
     private final char[] rack;
+    private final boolean isFirstMove;
     private Move nextMove = null;
 
     // Temporary fiels, used for iteration
     private int square;
     private char[] tempRack;
 
-    // Check if it's the first move
-    private boolean isFirstMove;
-
-    private void setIsFirstMove() {
-        for (int i = 0; i < BoardConstants.TOTAL_SIZE; i++) {
-            if (!board.isEmpty(i)) {
-                isFirstMove = false;
-                return;
-            }
-        }
-        isFirstMove = true;
-    }
-
     public LegalMoveIterator(PlayerView playerView, TrieDictionary dictionary) {
         this.dictionary = dictionary;
         board = playerView.getBoard();
         boardArray = board.getBoard();
         rack = playerView.getRack().getLetters();
-        setIsFirstMove();
+        isFirstMove = playerView.isFirstMove();
         tempRack = rack.clone();
         square = isFirstMove ? BoardConstants.TOTAL_SIZE / 2 : 0;
         advance();

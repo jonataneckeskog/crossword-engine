@@ -110,6 +110,10 @@ public final class Rack {
         return new Rack(frequencyMap, size);
     }
 
+    public boolean hasLetter(char letter) {
+        return frequencyMap[BagConstants.getIndex(letter)] > 0;
+    }
+
     public int size() {
         return size;
     }

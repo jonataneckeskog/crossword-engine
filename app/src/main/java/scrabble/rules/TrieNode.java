@@ -2,6 +2,8 @@ package scrabble.rules;
 
 import scrabble.rules.game.*;
 
+import java.util.Optional;
+
 public final class TrieNode {
     public final TrieNode[] children = new TrieNode[26];
     public boolean isWord;
@@ -10,8 +12,8 @@ public final class TrieNode {
         this.isWord = isWord;
     }
 
-    public TrieNode getChild(char letter) {
-        return children[BagConstants.getIndex(letter)];
+    public Optional<TrieNode> getChild(char letter) {
+        return Optional.ofNullable(children[BagConstants.getIndex(letter)]);
     }
 
     public void setChild(char letter, TrieNode node) {

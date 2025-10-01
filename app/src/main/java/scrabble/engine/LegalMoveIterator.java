@@ -6,16 +6,21 @@ import scrabble.rules.TrieDictionary;
 import scrabble.rules.game.BoardConstants;
 import scrabble.rules.TrieNode;
 
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Optional;
 
 public class LegalMoveIterator implements Iterator<Move> {
     // Fields
     private final TrieDictionary dictionary;
     private final Board board;
-    private final char[] boardArray;
     private final char[] rack;
     private final boolean isFirstMove;
-    private Move nextMove = null;
+
+    // Iterator variable
+    private List<Move> nextMoves = null;
 
     // Temporary fiels, used for iteration
     private int square;
@@ -24,34 +29,97 @@ public class LegalMoveIterator implements Iterator<Move> {
     public LegalMoveIterator(PlayerView playerView, TrieDictionary dictionary) {
         this.dictionary = dictionary;
         board = playerView.getBoard();
-        boardArray = board.getBoard();
         rack = playerView.getRack().getLetters();
         isFirstMove = playerView.isFirstMove();
         tempRack = rack.clone();
-        square = isFirstMove ? BoardConstants.TOTAL_SIZE / 2 : 0;
+        square = 0;
         advance();
     }
 
     // "Advanced" starts now
     private void advance() {
-        for (int square = this.square; square < BoardConstants.TOTAL_SIZE; square++) {
+        nextMoves = null;
+
+        if (isFirstMove) {
+            Position anchorPosition = Position.fromIndex(square);
+            char[] buffer = new char[BoardConstants.SIZE];
+            boolean[] placed = new boolean[BoardConstants.SIZE];
+            char[] rackCopy = tempRack.clone();
+            TrieNode trieRoot = dictionary.getRoot();
+            int depth = 0;
+
+            buildWord(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.RIGHT);
+            rackCopy = tempRack.clone(); // reset rack
+            buildWord(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.DOWN);
+
+            return;
+        }
+
+        for (; this.square < BoardConstants.TOTAL_SIZE; this.square++) {
             // 1. Create a position from the square and check if it is an anchor. If it's
             // not -> continue.
             Position anchorPosition = Position.fromIndex(square);
-            if (!isFirstMove && !board.isAnchor(anchorPosition))
+            if (!board.isAnchor(anchorPosition))
                 continue;
 
             // 2. Create a buffer for easier backtracking
             char[] buffer = new char[BoardConstants.SIZE];
+            boolean[] placed = new boolean[BoardConstants.SIZE];
             char[] rackCopy = tempRack.clone();
             TrieNode trieRoot = dictionary.getRoot();
             int depth = 0;
 
             // 3. Recursively start building words from the anchor in both vertical and
             // horizontal directions.
-            buildWord(anchorPosition, trieRoot, rackCopy, buffer, depth, Position.Step.RIGHT);
+            reverseBuild(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.LEFT, rack.length);
             rackCopy = tempRack.clone(); // reset rack
-            buildWord(anchorPosition, trieRoot, rackCopy, buffer, depth, Position.Step.DOWN);
+            reverseBuild(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.UP, rack.length);
+
+            // 4. If we found any moves for this anchor, stop here
+            if (nextMoves != null && !nextMoves.isEmpty()) {
+                this.square++; // advance to the next square for next call
+                return;
+            }
+        }
+    }
+
+    private void reverseBuild(Position anchor, TrieNode node,
+            char[] rack, char[] buffer, boolean[] placed,
+            int depth, Position.Step step, int limit) {
+        // 1) Once we stop extending backwards, start normal forward building
+        buildWord(anchor, node, rack, buffer, placed, depth, step);
+
+        // 2) If we’ve used all rack letters, stop
+        if (limit == 0)
+            return;
+
+        // 3) Try adding one more letter before the anchor
+        for (int i = 0; i < rack.length; i++) {
+            char tile = rack[i];
+            Optional<TrieNode> child = node.getChild(tile);
+            if (child.isEmpty())
+                continue;
+
+            // Add tile to buffer at current depth
+            buffer[depth] = tile;
+            placed[depth] = true;
+
+            // Remove a tile from the rack
+            char[] newRack = new char[limit - 1];
+            for (int u = 0; u < limit - 1; u++) {
+                if (u != i) {
+                    newRack[u] = rack[i];
+                }
+            }
+
+            // Step backwards on the board
+            Position prev = anchor.step(step);
+
+            // Recurse deeper (add longer prefix)
+            reverseBuild(prev, child.get(), newRack, buffer, placed, depth + 1, Position.Step.reverseStep(step),
+                    limit - 1);
+
+            placed[depth] = false; // backtrack
         }
     }
 
@@ -60,131 +128,144 @@ public class LegalMoveIterator implements Iterator<Move> {
             TrieNode node, // current Trie node
             char[] rack, // letters available
             char[] buffer, // letters placed so far (in order along 'step' direction)
+            boolean[] placed,
             int depth,
             Position.Step step // horizontal or vertical
     ) {
-        /*
-         * Purpose
-         * -------
-         * Recursively generate and validate all legal moves that pass through 'pos'
-         * in direction 'step', using 'node' (current trie state), 'rack' (available
-         * letters) and 'buffer' (letters placed so far along the main word).
-         *
-         * Key correctness requirements (things the algorithm must ensure)
-         * ------------------------------------------------------------
-         * 1) The generated word must be in the dictionary (Trie) when complete.
-         * 2) For non-first moves, the move must place at least one new tile and
-         * connect to existing tiles (i.e., touch board tiles).
-         * 3) Any cross-words (perpendicular to 'step') formed by newly placed tiles
-         * must themselves be valid dictionary words.
-         * 4) You must not overwrite existing tiles with a different letter.
-         * 5) Do not place more tiles than the rack has (consider blanks/wildcards).
-         * 6) The whole word must lie inside the board bounds.
-         *
-         * Algorithm outline (implementation notes)
-         * ---------------------------------------
-         * 0) Pre-conditions:
-         * - 'pos' is the starting square (anchor) for the *main* recursion.
-         * - 'buffer' holds letters placed so far along the main word (left-to-right
-         * or top-to-bottom depending on 'step'). 'depth' == buffer length.
-         *
-         * 1) Handle any fixed prefix that already exists *before* the anchor:
-         * - If there are contiguous existing tiles immediately before 'pos'
-         * (in the negative 'step' direction), those letters must be incorporated
-         * into the word prefix and the Trie advanced accordingly BEFORE placing
-         * new letters forward. (In practice this is done by walking backward
-         * from 'pos' to collect the fixed prefix or by calling a separate
-         * "extend-left" routine that builds allowed prefixes from the rack.)
-         *
-         * 2) Main-recursive generation:
-         * - At each recursive call consider the current board square S (initially
-         * 'pos'):
-         * a) If S is off-board: stop recursion.
-         * b) If S already contains a letter L:
-         * - Check whether 'node' has child L. If no -> prune and return.
-         * - Append L to buffer, advance 'node' to child(L), move to next square
-         * (pos + step), recurse.
-         * c) If S is empty:
-         * - For each distinct letter X (including using blanks) in the rack:
-         * i) Check whether 'node' has child X. If no -> skip X (prune).
-         * ii) Form the perpendicular (cross) word that would result if X
-         * were placed at S: gather contiguous letters before/after S
-         * along perpendicular direction plus X in the middle.
-         * iii) If the cross-word length > 1, verify it is in the dictionary
-         * (or that the Trie contains that exact cross word).
-         * If invalid -> skip X (prune).
-         * iv) Temporarily consume X from rack, append X to buffer, advance
-         * 'node' to child(X) and recurse to next square (pos + step).
-         * v) Backtrack: restore rack and buffer.
-         *
-         * 3) Recording valid moves:
-         * - At any point where 'node' marks the end of a valid word (node.isWord()):
-         * and the buffer length >= game minimum (usually >= 2 unless dictionaries
-         * differ) and the placement satisfies connectivity rules (see #2 above),
-         * record the candidate Move using:
-         * - start position = the position corresponding to the first letter
-         * in 'buffer' (this may be before the original anchor if you
-         * generated a left-extended prefix),
-         * - direction = step,
-         * - letters placed with their board indices,
-         * - used rack letters (including blanks mapped to actual letters).
-         *
-         * 4) Pruning and limits:
-         * - Stop recursion when buffer length equals (existing fixed-prefix + rack
-         * size).
-         * - Use the Trie to prune early when no child nodes exist.
-         * - Use precomputed cross-check sets for each square (optional) to speed up
-         * step 2.c.iii by testing letter legality without building the whole cross
-         * word.
-         *
-         * 5) First-move special case:
-         * - For the first move the placed word must cover the center square.
-         * Enforce that when recording candidate moves (or by only starting at
-         * center in advance()).
-         *
-         * 6) Additional bookkeeping (optional but useful for scoring & tie-breaking):
-         * - Track whether at least one tile was newly placed (move is legal only if
-         * yes,
-         * except if your rules permit passes).
-         * - Track used tile indices and score incrementally for quick ranking.
-         *
-         * Implementation tip / recommended structure:
-         * -------------------------------------------
-         * - Implement two helper routines:
-         * 1) extendLeftAndGenerate(pos, node, rack, partialPrefix, step):
-         * - Generate all possible fixed prefixes that can be placed to the left
-         * of 'pos' (including the empty prefix), using up to rack size letters.
-         * - For each prefix produced, call extendRightFrom(startPos, nodeForPrefix,
-         * rackAfterPrefix, bufferStartingWithPrefix, step).
-         *
-         * 2) extendRightFrom(currPos, node, rack, buffer, step):
-         * - The recursive routine described above that continues forward and
-         * collects complete words, checking cross-words and boundaries.
-         *
-         * - This two-phase approach (build prefix, then extend forward) matches
-         * canonical Scrabble move-generation algorithms and ensures you don't
-         * miss words that place tiles both before and after the anchor.
-         *
-         * Summary:
-         * - The original comment was fine at a high level but must explicitly handle:
-         * * any fixed prefix before the anchor,
-         * * cross-word validation for each newly placed tile (including multi-letter
-         * crosses),
-         * * rack consumption including blanks, and
-         * * ensuring connectivity and at-least-one-new-tile constraints.
-         */
+        // 1. Current square out-of-bounds → stop recursion
+        if (board.isOutOfBounds(pos))
+            return;
+
+        // 2. If square has a fixed tile
+        if (!board.isEmpty(pos)) {
+            char letter = board.tileAt(pos);
+            Optional<TrieNode> child = node.getChild(letter);
+            if (child.isEmpty())
+                return;
+
+            buffer[depth] = letter;
+            placed[depth] = false;
+            buildWord(pos.step(step), child.get(), rack, buffer, placed, depth + 1, step);
+
+            // record moves ending at this node
+            if (child.get().isWord)
+                recordMove(pos, Position.Step.reverseStep(step), buffer, placed, depth + 1);
+
+            return;
+        }
+
+        // 3. If square is empty → try rack tiles
+        for (int i = 0; i < rack.length; i++) {
+            char tile = rack[i];
+            Optional<TrieNode> child = node.getChild(tile);
+            if (child.isEmpty())
+                continue;
+            if (!isCrossWordValid(pos, tile, Position.Step.otherStep(step)))
+                continue;
+
+            buffer[depth] = tile;
+            placed[depth] = true;
+
+            // rack is a char[] containing all available tiles
+            char[] newRack = new char[rack.length - 1];
+            for (int k = 0, j = 0; k < rack.length; k++) {
+                if (k == i)
+                    continue; // skip the tile we just used
+                newRack[j++] = rack[k]; // copy the rest
+            }
+
+            buildWord(pos.step(step), child.get(), newRack, buffer, placed, depth + 1, step);
+
+            placed[depth] = false;
+
+            // record moves ending at this node
+            if (child.get().isWord)
+                recordMove(pos, Position.Step.reverseStep(step), buffer, placed, depth + 1);
+        }
+    }
+
+    private boolean isCrossWordValid(Position pos, char tile, Position.Step perpStep) {
+        Position.Step reverseStep = Position.Step.reverseStep(perpStep);
+
+        // 1) Find start of the cross word
+        Position start = pos;
+        while (!board.isOutOfBounds(start.step(reverseStep)) && !board.isEmpty(start.step(reverseStep))) {
+            start = start.step(reverseStep);
+        }
+
+        // 2) Build the word
+        StringBuilder sb = new StringBuilder();
+        Position current = start;
+        while (!board.isOutOfBounds(current) && (!board.isEmpty(current) || current.equals(pos))) {
+            if (current.equals(pos)) {
+                sb.append(tile); // include candidate tile
+            } else {
+                sb.append(board.tileAt(current));
+            }
+            current = current.step(perpStep);
+        }
+
+        // 3) If the cross word has length 1, no new word is formed -> valid
+        if (sb.length() == 1)
+            return true;
+
+        // 4) Validate the word
+        return dictionary.isWord(sb.toString());
+    }
+
+    private void recordMove(Position endPos, Position.Step step,
+            char[] buffer, boolean[] placed, int depth) {
+        // Figure out where the word actually starts
+        Position start = endPos;
+        for (int i = 1; i < depth; i++) {
+            start = start.step(step);
+        }
+
+        // Walk through the buffer along the board
+        List<Position> positionsList = new ArrayList<>();
+        List<Character> lettersList = new ArrayList<>();
+
+        Position p = start;
+        boolean placedAtLeastOne = false;
+
+        for (int i = 0; i < depth; i++) {
+            if (placed[i]) {
+                positionsList.add(p);
+                lettersList.add(buffer[i]);
+                placedAtLeastOne = true;
+            }
+            p = p.step(step);
+        }
+
+        // Must place at least one tile
+        if (!placedAtLeastOne)
+            return;
+
+        // Convert to arrays
+        Position[] positions = positionsList.toArray(new Position[0]);
+        char[] letters = new char[lettersList.size()];
+        for (int i = 0; i < letters.length; i++) {
+            letters[i] = lettersList.get(i);
+        }
+
+        if (nextMoves == null) {
+            nextMoves = new ArrayList<>();
+        }
+        nextMoves.add(new Move(positions, letters));
     }
 
     @Override
     public boolean hasNext() {
-        return nextMove != null;
+        return nextMoves != null;
     }
 
     @Override
     public Move next() {
-        Move move = nextMove;
-        advance();
+        if (!hasNext())
+            throw new NoSuchElementException("There are no more moves");
+        Move move = nextMoves.removeLast();
+        if (nextMoves.isEmpty())
+            advance();
         return move;
     }
-
 }

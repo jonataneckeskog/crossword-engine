@@ -37,7 +37,7 @@ public final class PlayerView {
         Board newBoard = gameState.getBoard();
 
         Rack[] oldRacks = gameState.getRacks();
-        char[] tilesToAdd = oldRacks[playerId == 0 ? 1 : 0].getLetters();
+        char[] tilesToAdd = oldRacks[1 - playerId].getLetters();
         Bag newBag = gameState.getBag().addTiles(tilesToAdd);
         Rack newRack = oldRacks[playerId];
 

@@ -65,7 +65,7 @@ public final class GameState {
 
         Bag newBag = playerView.getBag().removeTiles(otherRack.getLetters());
         Rack[] newRacks = new Rack[2];
-        newRacks[playerId == 0 ? 0 : 1] = playerView.getRack();
+        newRacks[1 - playerId] = playerView.getRack();
 
         return new GameState(board, newBag, newRacks, playerView.getScores(), playerView.isFirstMove());
     }

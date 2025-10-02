@@ -7,6 +7,7 @@ import scrabble.core.components.Rack;
 
 import scrabble.rules.MoveScorer;
 import scrabble.rules.MoveValidator;
+import scrabble.rules.game.*;
 
 public final class GameState {
     private final Board board;
@@ -39,8 +40,23 @@ public final class GameState {
     }
 
     public static GameState stateFrom(String string) {
-        // TO-DO
-        return startState();
+        String[] splitString = string.split("/");
+        Board board = Board.fromString(splitString[0]);
+        Bag bag = Bag.fromString(splitString[1]);
+        Rack[] racks = new Rack[2];
+        racks[0] = Rack.fromString(splitString[2]);
+        racks[1] = Rack.fromString(splitString[3]);
+        int[] scores = new int[2];
+        scores[0] = Integer.parseInt(splitString[4]);
+        scores[1] = Integer.parseInt(splitString[5]);
+        boolean isFirstMove = true;
+        for (int i = 0; i < splitString[0].length(); i++) {
+            if (splitString[0].charAt(i) != GameConstants.EMPTY_SQUARE) {
+                isFirstMove = false;
+                break;
+            }
+        }
+        return new GameState(board, bag, racks, scores, isFirstMove);
     }
 
     public static GameState fromPlayerView(PlayerView playerView, Rack otherRack) {

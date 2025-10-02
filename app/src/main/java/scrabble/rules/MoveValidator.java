@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 import scrabble.core.Move;
 import scrabble.core.components.Board;
-import scrabble.rules.game.BoardConstants;
+import scrabble.rules.game.*;
 import scrabble.core.Position;
 
 public final class MoveValidator {
@@ -70,16 +70,16 @@ public final class MoveValidator {
 
     private static boolean isLineValid(char[] line, TrieDictionary dictionary) {
         for (int i = 0; i < line.length; i++) {
-            if (line[i] == BoardConstants.EMPTY_SQUARE)
+            if (line[i] == GameConstants.EMPTY_SQUARE)
                 continue;
 
             StringBuilder sb = new StringBuilder();
             for (int j = i; j < line.length; j++) {
-                if (line[j] == BoardConstants.EMPTY_SQUARE)
+                if (line[j] == GameConstants.EMPTY_SQUARE)
                     break;
 
                 sb.append(line[j]);
-                line[j] = BoardConstants.EMPTY_SQUARE;
+                line[j] = GameConstants.EMPTY_SQUARE;
             }
 
             if (!dictionary.isWord(sb.toString()))

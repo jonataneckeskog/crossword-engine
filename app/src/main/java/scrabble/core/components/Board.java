@@ -4,8 +4,7 @@ import java.util.Arrays;
 
 import scrabble.core.Move;
 import scrabble.core.Position;
-import scrabble.rules.game.BoardConstants;
-import scrabble.rules.game.BagConstants;
+import scrabble.rules.game.*;
 
 public final class Board {
     private final char[] board;
@@ -16,7 +15,7 @@ public final class Board {
 
     public static Board emptyBoard() {
         char[] tiles = new char[BoardConstants.TOTAL_SIZE];
-        Arrays.fill(tiles, BoardConstants.EMPTY_SQUARE);
+        Arrays.fill(tiles, GameConstants.EMPTY_SQUARE);
         return new Board(tiles);
     }
 
@@ -32,7 +31,7 @@ public final class Board {
             char letter = boardString.charAt(i);
 
             if (!(BagConstants.isValidLetter(Character.toUpperCase(letter))
-                    || (letter == BoardConstants.EMPTY_SQUARE))) {
+                    || (letter == GameConstants.EMPTY_SQUARE))) {
                 throw new IllegalArgumentException("Symbol " + letter + " is not a valid letter.");
             }
 
@@ -66,11 +65,11 @@ public final class Board {
     }
 
     public boolean isEmpty(int index) {
-        return board[index] == BoardConstants.EMPTY_SQUARE;
+        return board[index] == GameConstants.EMPTY_SQUARE;
     }
 
     public boolean isEmpty(Position position) {
-        return board[position.toIndex()] == BoardConstants.EMPTY_SQUARE;
+        return board[position.toIndex()] == GameConstants.EMPTY_SQUARE;
     }
 
     public char tileAt(int index) {
@@ -138,7 +137,7 @@ public final class Board {
             for (int c = 0; c < BoardConstants.SIZE; c++) {
                 int index = r * BoardConstants.SIZE + c;
                 char letter = board[index];
-                sb.append(letter == BoardConstants.EMPTY_SQUARE ? BoardConstants.EMPTY_SQUARE : letter);
+                sb.append(letter == GameConstants.EMPTY_SQUARE ? GameConstants.EMPTY_SQUARE : letter);
                 if (c < BoardConstants.SIZE - 1)
                     sb.append(' ');
             }

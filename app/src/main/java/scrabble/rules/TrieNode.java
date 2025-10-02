@@ -5,7 +5,7 @@ import scrabble.rules.game.*;
 import java.util.Optional;
 
 public final class TrieNode {
-    public final TrieNode[] children = new TrieNode[26];
+    public final TrieNode[] children = new TrieNode[BagConstants.UNIQUE_TILES];
     public boolean isWord;
 
     TrieNode(boolean isWord) {

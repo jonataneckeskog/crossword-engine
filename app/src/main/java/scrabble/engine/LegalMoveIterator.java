@@ -7,8 +7,10 @@ import scrabble.rules.game.BoardConstants;
 import scrabble.rules.TrieNode;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.ArrayDeque;
+import java.util.NoSuchElementException;
 import java.util.Iterator;
 import java.util.Optional;
 
@@ -20,18 +22,16 @@ public class LegalMoveIterator implements Iterator<Move> {
     private final boolean isFirstMove;
 
     // Iterator variable
-    private List<Move> nextMoves = null;
+    private Deque<Move> nextMoves = null;
 
     // Temporary fiels, used for iteration
     private int square;
-    private char[] tempRack;
 
     public LegalMoveIterator(PlayerView playerView, TrieDictionary dictionary) {
         this.dictionary = dictionary;
         board = playerView.getBoard();
         rack = playerView.getRack().getLetters();
         isFirstMove = playerView.isFirstMove();
-        tempRack = rack.clone();
         square = 0;
         advance();
     }
@@ -44,13 +44,13 @@ public class LegalMoveIterator implements Iterator<Move> {
             Position anchorPosition = Position.fromIndex(square);
             char[] buffer = new char[BoardConstants.SIZE];
             boolean[] placed = new boolean[BoardConstants.SIZE];
-            char[] rackCopy = tempRack.clone();
+            char[] rackCopy = rack.clone();
             TrieNode trieRoot = dictionary.getRoot();
             int depth = 0;
 
-            buildWord(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.RIGHT);
-            rackCopy = tempRack.clone(); // reset rack
-            buildWord(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.DOWN);
+            reverseBuild(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.LEFT, rack.length);
+            rackCopy = rack.clone(); // reset rack
+            reverseBuild(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.UP, rack.length);
 
             return;
         }
@@ -65,14 +65,14 @@ public class LegalMoveIterator implements Iterator<Move> {
             // 2. Create a buffer for easier backtracking
             char[] buffer = new char[BoardConstants.SIZE];
             boolean[] placed = new boolean[BoardConstants.SIZE];
-            char[] rackCopy = tempRack.clone();
+            char[] rackCopy = rack.clone();
             TrieNode trieRoot = dictionary.getRoot();
             int depth = 0;
 
             // 3. Recursively start building words from the anchor in both vertical and
             // horizontal directions.
             reverseBuild(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.LEFT, rack.length);
-            rackCopy = tempRack.clone(); // reset rack
+            rackCopy = rack.clone(); // reset rack
             reverseBuild(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.UP, rack.length);
 
             // 4. If we found any moves for this anchor, stop here
@@ -83,17 +83,19 @@ public class LegalMoveIterator implements Iterator<Move> {
         }
     }
 
+    // --- reverseBuild (fixed) ---
     private void reverseBuild(Position anchor, TrieNode node,
             char[] rack, char[] buffer, boolean[] placed,
-            int depth, Position.Step step, int limit) {
-        // 1) Once we stop extending backwards, start normal forward building
-        buildWord(anchor, node, rack, buffer, placed, depth, step);
+            int depth, Position.Step backStep, int limit) {
 
-        // 2) If we’ve used all rack letters, stop
+        // build forward from the anchor using the opposite of 'backStep'
+        Position.Step forwardStep = Position.Step.reverseStep(backStep);
+        buildWord(anchor, node, rack, buffer, placed, depth, forwardStep);
+
         if (limit == 0)
             return;
 
-        // 3) Try adding one more letter before the anchor
+        // Try adding one more letter before the anchor (in the backStep direction)
         for (int i = 0; i < rack.length; i++) {
             char tile = rack[i];
             Optional<TrieNode> child = node.getChild(tile);
@@ -104,20 +106,19 @@ public class LegalMoveIterator implements Iterator<Move> {
             buffer[depth] = tile;
             placed[depth] = true;
 
-            // Remove a tile from the rack
-            char[] newRack = new char[limit - 1];
-            for (int u = 0; u < limit - 1; u++) {
-                if (u != i) {
-                    newRack[u] = rack[i];
-                }
+            // Remove a tile from the rack — copy all except index i
+            char[] newRack = new char[rack.length - 1];
+            for (int k = 0, j = 0; k < rack.length; k++) {
+                if (k == i)
+                    continue;
+                newRack[j++] = rack[k];
             }
 
-            // Step backwards on the board
-            Position prev = anchor.step(step);
+            // Step backwards on the board (one square further away from the anchor)
+            Position prev = anchor.step(backStep);
 
-            // Recurse deeper (add longer prefix)
-            reverseBuild(prev, child.get(), newRack, buffer, placed, depth + 1, Position.Step.reverseStep(step),
-                    limit - 1);
+            // Recurse deeper (add longer prefix). Note we keep backStep the same.
+            reverseBuild(prev, child.get(), newRack, buffer, placed, depth + 1, backStep, limit - 1);
 
             placed[depth] = false; // backtrack
         }
@@ -149,7 +150,7 @@ public class LegalMoveIterator implements Iterator<Move> {
 
             // record moves ending at this node
             if (child.get().isWord)
-                recordMove(pos, Position.Step.reverseStep(step), buffer, placed, depth + 1);
+                recordMove(pos, step, buffer, placed, depth + 1);
 
             return;
         }
@@ -180,7 +181,7 @@ public class LegalMoveIterator implements Iterator<Move> {
 
             // record moves ending at this node
             if (child.get().isWord)
-                recordMove(pos, Position.Step.reverseStep(step), buffer, placed, depth + 1);
+                recordMove(pos, step, buffer, placed, depth + 1);
         }
     }
 
@@ -213,18 +214,22 @@ public class LegalMoveIterator implements Iterator<Move> {
         return dictionary.isWord(sb.toString());
     }
 
+    // --- recordMove (fixed) ---
+    // Now `step` is the forward direction: from word start --> word end
     private void recordMove(Position endPos, Position.Step step,
             char[] buffer, boolean[] placed, int depth) {
-        // Figure out where the word actually starts
+
+        // Compute start by stepping from endPos towards the start (reverse of forward
+        // step)
+        Position.Step backwards = Position.Step.reverseStep(step);
         Position start = endPos;
         for (int i = 1; i < depth; i++) {
-            start = start.step(step);
+            start = start.step(backwards);
         }
 
-        // Walk through the buffer along the board
+        // Walk forwards from start to collect placed positions and letters
         List<Position> positionsList = new ArrayList<>();
         List<Character> lettersList = new ArrayList<>();
-
         Position p = start;
         boolean placedAtLeastOne = false;
 
@@ -234,14 +239,12 @@ public class LegalMoveIterator implements Iterator<Move> {
                 lettersList.add(buffer[i]);
                 placedAtLeastOne = true;
             }
-            p = p.step(step);
+            p = p.step(step); // move forward (start -> end)
         }
 
-        // Must place at least one tile
         if (!placedAtLeastOne)
             return;
 
-        // Convert to arrays
         Position[] positions = positionsList.toArray(new Position[0]);
         char[] letters = new char[lettersList.size()];
         for (int i = 0; i < letters.length; i++) {
@@ -249,7 +252,7 @@ public class LegalMoveIterator implements Iterator<Move> {
         }
 
         if (nextMoves == null) {
-            nextMoves = new ArrayList<>();
+            nextMoves = new ArrayDeque<>();
         }
         nextMoves.add(new Move(positions, letters));
     }
@@ -263,7 +266,7 @@ public class LegalMoveIterator implements Iterator<Move> {
     public Move next() {
         if (!hasNext())
             throw new NoSuchElementException("There are no more moves");
-        Move move = nextMoves.removeLast();
+        Move move = nextMoves.pop();
         if (nextMoves.isEmpty())
             advance();
         return move;

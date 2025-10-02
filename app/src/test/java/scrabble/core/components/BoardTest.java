@@ -3,7 +3,7 @@ package scrabble.core.components;
 import org.junit.jupiter.api.Test;
 import scrabble.core.Move;
 import scrabble.core.Position;
-import scrabble.rules.game.BoardConstants;
+import scrabble.rules.game.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,7 +13,7 @@ class BoardTest {
     void testEmptyBoard() {
         Board board = Board.emptyBoard();
         for (int i = 0; i < BoardConstants.TOTAL_SIZE; i++) {
-            assertEquals(BoardConstants.EMPTY_SQUARE, board.tileAt(i));
+            assertEquals(GameConstants.EMPTY_SQUARE, board.tileAt(i));
         }
     }
 
@@ -21,7 +21,7 @@ class BoardTest {
     void testFromStringValidation() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < BoardConstants.TOTAL_SIZE; i++)
-            sb.append(BoardConstants.EMPTY_SQUARE);
+            sb.append(GameConstants.EMPTY_SQUARE);
         assertDoesNotThrow(() -> Board.fromString(sb.toString()));
 
         sb.setCharAt(0, '1'); // invalid
@@ -34,8 +34,8 @@ class BoardTest {
         Board board = Board.emptyBoard();
         Position pos = new Position(0, 0);
         assertTrue(board.isEmpty(pos));
-        assertEquals(BoardConstants.EMPTY_SQUARE, board.tileAt(pos));
-        assertEquals(BoardConstants.EMPTY_SQUARE, board.tileAt(pos.toIndex()));
+        assertEquals(GameConstants.EMPTY_SQUARE, board.tileAt(pos));
+        assertEquals(GameConstants.EMPTY_SQUARE, board.tileAt(pos.toIndex()));
     }
 
     @Test

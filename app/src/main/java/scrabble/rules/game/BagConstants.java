@@ -45,7 +45,7 @@ public final class BagConstants {
     }
 
     public static int getIndex(char letter) {
-        return TILE_INDEX.get(letter);
+        return TILE_INDEX.get(Character.toUpperCase(letter));
     }
 
     public static boolean isValidLetter(char letter) {

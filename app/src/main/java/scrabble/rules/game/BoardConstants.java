@@ -4,8 +4,6 @@ public final class BoardConstants {
         private BoardConstants() {
         }
 
-        public static final char EMPTY_SQUARE = '\u0000';
-
         public static final int SIZE = 15;
         public static final int TOTAL_SIZE = SIZE * SIZE;
 

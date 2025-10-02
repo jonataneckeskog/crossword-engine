@@ -37,7 +37,8 @@ public final class PlayerView {
         Board newBoard = gameState.getBoard();
 
         Rack[] oldRacks = gameState.getRacks();
-        Bag newBag = gameState.getBag().addTiles(oldRacks[playerId == 0 ? 1 : 0].getLetters());
+        char[] tilesToAdd = oldRacks[playerId == 0 ? 1 : 0].getLetters();
+        Bag newBag = gameState.getBag().addTiles(tilesToAdd);
         Rack newRack = oldRacks[playerId];
 
         return new PlayerView(newBoard, newBag, newRack, gameState.getScores(), playerId, gameState.isFirstMove());

@@ -22,6 +22,7 @@ public final class BagConstants {
             Map.entry('Y', new LetterData(2, 4)), Map.entry('Z', new LetterData(1, 10)),
             Map.entry('?', new LetterData(2, 0)));
 
+    public static final char BLANK = '?';
     public static final int UNIQUE_TILES = TILE_DATA.size();
     public static final int TILE_COUNT = TILE_DATA.values().stream().mapToInt(LetterData::count).sum();
 

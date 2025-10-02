@@ -13,7 +13,7 @@ public final class TrieNode {
     }
 
     public Optional<TrieNode> getChild(char letter) {
-        return Optional.ofNullable(children[BagConstants.getIndex(letter)]);
+        return Optional.ofNullable(children[BagConstants.getIndex(Character.toUpperCase(letter))]);
     }
 
     public void setChild(char letter, TrieNode node) {

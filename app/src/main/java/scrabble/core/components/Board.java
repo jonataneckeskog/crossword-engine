@@ -44,14 +44,23 @@ public final class Board {
     public boolean isAnchor(Position position) {
         if (!isEmpty(position.toIndex()))
             return false;
-        if (!isEmpty(position.tryStep(Position.Step.UP, this)))
+
+        Position up = position.tryStep(Position.Step.UP, this);
+        if (up != null && !isEmpty(up.toIndex()))
             return true;
-        if (!isEmpty(position.tryStep(Position.Step.DOWN, this)))
+
+        Position down = position.tryStep(Position.Step.DOWN, this);
+        if (down != null && !isEmpty(down.toIndex()))
             return true;
-        if (!isEmpty(position.tryStep(Position.Step.LEFT, this)))
+
+        Position left = position.tryStep(Position.Step.LEFT, this);
+        if (left != null && !isEmpty(left.toIndex()))
             return true;
-        if (!isEmpty(position.tryStep(Position.Step.RIGHT, this)))
+
+        Position right = position.tryStep(Position.Step.RIGHT, this);
+        if (right != null && !isEmpty(right.toIndex()))
             return true;
+
         return false;
     }
 

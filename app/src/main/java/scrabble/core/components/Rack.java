@@ -48,14 +48,15 @@ public final class Rack {
     }
 
     public char[] getLetters() {
-        char[] letters = new char[GameConstants.RACK_SIZE];
+        int total = 0;
+        for (byte count : frequencyMap) {
+            total += count;
+        }
+        char[] letters = new char[total];
         int index = 0;
         for (int i = 0; i < BagConstants.UNIQUE_TILES; i++) {
-            if (frequencyMap[i] != 0) {
-                for (int j = 0; j < frequencyMap[i]; j++) {
-                    letters[index] = BagConstants.INDEX_TO_CHAR[i];
-                    index++;
-                }
+            for (int j = 0; j < frequencyMap[i]; j++) {
+                letters[index++] = BagConstants.INDEX_TO_CHAR[i];
             }
         }
         return letters;

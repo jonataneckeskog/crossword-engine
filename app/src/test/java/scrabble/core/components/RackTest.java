@@ -1,6 +1,7 @@
 package scrabble.core.components;
 
 import org.junit.jupiter.api.Test;
+
 import scrabble.rules.game.GameConstants;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -58,10 +59,10 @@ public class RackTest {
         assertTrue(emptyRack.isEmpty());
 
         // Removing tile not present should throw
-        assertThrows(IllegalArgumentException.class, () -> afterRemove.removeTiles(new char[] { 'X' }));
+        assertThrows(IllegalStateException.class, () -> afterRemove.removeTiles(new char[] { 'X' }));
 
         // Removing more than available should throw
-        assertThrows(IllegalArgumentException.class, () -> afterRemove.removeTiles(new char[] { 'B' }));
+        assertThrows(IllegalStateException.class, () -> afterRemove.removeTiles(new char[] { 'B' }));
     }
 
     @Test
@@ -77,8 +78,12 @@ public class RackTest {
         assertTrue(newRack.size() <= GameConstants.RACK_SIZE);
 
         // Bag size should decrease correctly
-        int drawn = newRack.size() - rack.size();
-        assertEquals(bag.size() - drawn, newBag.size());
+        assertEquals(bag.size() - (newRack.size() - rack.size()), newBag.size());
+
+        // Frequency map must be valid
+        for (byte b : newRack.getFrequencyMap()) {
+            assertTrue(b >= 0);
+        }
     }
 
     @Test

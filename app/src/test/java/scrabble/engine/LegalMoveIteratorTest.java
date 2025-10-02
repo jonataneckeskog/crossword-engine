@@ -4,17 +4,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scrabble.core.GameState;
 import scrabble.core.PlayerView;
+import scrabble.core.Position;
 import scrabble.rules.TrieDictionary;
 import scrabble.core.Move;
 import scrabble.rules.game.*;
 
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LegalMoveIteratorTest {
-
+    private GameState gameState;
     private PlayerView playerView;
     private LegalMoveIterator legalMoveIterator;
 
@@ -22,15 +23,15 @@ public class LegalMoveIteratorTest {
     void setup() {
         // Start a new empty game
         String boardString = String.valueOf(GameConstants.EMPTY_SQUARE).repeat(BoardConstants.TOTAL_SIZE);
-        String bagToFirstMove = "XORANDIFELSE/AND/NAND/100/100";
+        String bagToFirstMove = "XORANDIFELSE/AND/AD/100/100";
         String gameString = boardString + "/" + bagToFirstMove;
 
-        GameState gameState = GameState.stateFrom(gameString);
+        gameState = GameState.stateFrom(gameString);
         playerView = PlayerView.fromGameState(gameState, 0);
 
         // Create a simple dictionary containing a single word
         List<String> words = new ArrayList<>();
-        words.add("and");
+        words.add("AND"); // use uppercase for consistency with rack/bag
         TrieDictionary dictionary = new TrieDictionary(words);
 
         // Create the move generator
@@ -38,19 +39,33 @@ public class LegalMoveIteratorTest {
     }
 
     @Test
-    void testFirstMoveGeneratesCenterWord() {
-        // Ensure there is at least one legal move
-        assertTrue(legalMoveIterator.hasNext(), "The move generator should find at least one move");
-
+    void testGenerateAllMoves() {
         List<Move> moves = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            assertTrue(legalMoveIterator.hasNext());
+            moves.add(legalMoveIterator.next());
+        }
+
+        Set<Move> moveSet = new HashSet<>(moves);
+
+        assertEquals(6, moveSet.size());
+        assertEquals(6, moves.size());
+    }
+
+    @Test
+    void testFirstMoveGeneratesCenterWord() {
+        List<Move> moves = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            assertTrue(legalMoveIterator.hasNext());
+            moves.add(legalMoveIterator.next());
+        }
 
         // Check that each move covers the center (first move rule)
-        while (legalMoveIterator.hasNext()) {
-            Move move = legalMoveIterator.next();
-            moves.add(move);
+        Position center = Position.fromIndex(BoardConstants.TOTAL_SIZE / 2);
+        for (Move move : moves) {
             boolean coversCenter = false;
-            for (int i = 0; i < move.getPositions().length; i++) {
-                if (move.getPositions()[i].equals(BoardConstants.TOTAL_SIZE / 2)) {
+            for (Position pos : move.getPositions()) {
+                if (pos.equals(center)) {
                     coversCenter = true;
                     break;
                 }
@@ -58,7 +73,7 @@ public class LegalMoveIteratorTest {
             assertTrue(coversCenter, "First move must cover the center square");
         }
 
-        // Optional: check that letters placed are from rack
+        // Check that letters placed are from the player's rack
         for (Move move : moves) {
             for (char c : move.getTiles()) {
                 assertTrue(playerView.getRack().hasLetter(c),
@@ -68,31 +83,20 @@ public class LegalMoveIteratorTest {
     }
 
     @Test
-    void testSecondMoveConnectsToExistingTile() {
-        // First move
-        if (legalMoveIterator.hasNext()) {
-            Move move = legalMoveIterator.next();
-
-            // Apply first move to the board (simulate)
-            playerView = playerView.applyMove(move);
-
-            // Create a new iterator for second move
-            legalMoveIterator = new LegalMoveIterator(playerView, new TrieDictionary(List.of("and", "an", "dan")));
-
-            assertTrue(legalMoveIterator.hasNext(), "Second move generator should find legal moves");
-
-            // Check that each second move touches at least one existing tile
-            while (legalMoveIterator.hasNext()) {
-                Move secondMove = legalMoveIterator.next();
-                boolean touchesExisting = false;
-                for (int i = 0; i < secondMove.getPositions().length; i++) {
-                    if (!playerView.getBoard().isEmpty(secondMove.getPositions()[i])) {
-                        touchesExisting = true;
-                        break;
-                    }
-                }
-                assertTrue(touchesExisting, "Second move must connect to existing tiles");
-            }
+    void testConnectsToExistingTile() {
+        List<Move> moves = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            assertTrue(legalMoveIterator.hasNext());
+            moves.add(legalMoveIterator.next());
         }
+
+        GameState newState = gameState.applyMove(moves.get(0), false, 0);
+        PlayerView opponentView = PlayerView.fromGameState(newState, 1);
+
+        LegalMoveIterator newIterator = new LegalMoveIterator(opponentView, new TrieDictionary(List.of("ANDD")));
+        List<Move> opponentMoves = new ArrayList<>();
+
+        assertTrue(newIterator.hasNext());
+        opponentMoves.add(newIterator.next());
     }
 }

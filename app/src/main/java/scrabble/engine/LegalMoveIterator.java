@@ -3,29 +3,47 @@ package scrabble.engine;
 import scrabble.core.*;
 import scrabble.core.components.*;
 import scrabble.rules.TrieDictionary;
+import scrabble.rules.game.BagConstants;
 import scrabble.rules.game.BoardConstants;
+import scrabble.rules.game.GameConstants;
 import scrabble.rules.TrieNode;
 
-import java.util.List;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.ArrayDeque;
 import java.util.NoSuchElementException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 
 public class LegalMoveIterator implements Iterator<Move> {
     // Fields
-    private final TrieDictionary dictionary;
+    private TrieDictionary dictionary;
     private final Board board;
     private final char[] rack;
     private final boolean isFirstMove;
+    private final TrieNode trieRoot;
 
     // Iterator variable
     private Deque<Move> nextMoves = null;
 
     // Temporary fiels, used for iteration
     private int square;
+    private int currentRow;
+    private int currentCol;
+
+    private final char[][] horiLines = new char[BoardConstants.SIZE][BoardConstants.SIZE];
+    private final char[][] vertLines = new char[BoardConstants.SIZE][BoardConstants.SIZE];
+
+    public void initializeBuffers() {
+        for (int i = 0; i < BoardConstants.SIZE; i++) {
+            for (int j = 0; j < BoardConstants.SIZE; j++) {
+                char tile = board.tileAt(new Position(i, j));
+                horiLines[i][j] = tile;
+                vertLines[j][i] = tile;
+            }
+        }
+    }
 
     public LegalMoveIterator(PlayerView playerView, TrieDictionary dictionary) {
         this.dictionary = dictionary;
@@ -33,6 +51,8 @@ public class LegalMoveIterator implements Iterator<Move> {
         rack = playerView.getRack().getLetters();
         isFirstMove = playerView.isFirstMove();
         square = 0;
+        trieRoot = dictionary.getRoot();
+        initializeBuffers();
         advance();
     }
 
@@ -41,16 +61,18 @@ public class LegalMoveIterator implements Iterator<Move> {
         nextMoves = null;
 
         if (isFirstMove) {
-            Position anchorPosition = Position.fromIndex(square);
-            char[] buffer = new char[BoardConstants.SIZE];
-            boolean[] placed = new boolean[BoardConstants.SIZE];
-            char[] rackCopy = rack.clone();
-            TrieNode trieRoot = dictionary.getRoot();
-            int depth = 0;
+            // Special case: first move must cover center square
+            currentRow = BoardConstants.SIZE / 2;
+            currentCol = BoardConstants.SIZE / 2;
 
-            reverseBuild(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.LEFT, rack.length);
-            rackCopy = rack.clone(); // reset rack
-            reverseBuild(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.UP, rack.length);
+            char[] horiBuffer = horiLines[currentRow].clone();
+            boolean[] horiPlaced = new boolean[BoardConstants.SIZE];
+
+            char[] vertBuffer = vertLines[currentCol].clone();
+            boolean[] vertPlaced = new boolean[BoardConstants.SIZE];
+
+            reverseBuild(rack.clone(), horiBuffer, horiPlaced, currentCol, rack.length, true);
+            reverseBuild(rack.clone(), vertBuffer, vertPlaced, currentRow, rack.length, false);
 
             return;
         }
@@ -58,22 +80,24 @@ public class LegalMoveIterator implements Iterator<Move> {
         for (; this.square < BoardConstants.TOTAL_SIZE; this.square++) {
             // 1. Create a position from the square and check if it is an anchor. If it's
             // not -> continue.
-            Position anchorPosition = Position.fromIndex(square);
-            if (!board.isAnchor(anchorPosition))
+            Position anchor = Position.fromIndex(square);
+            if (!board.isAnchor(anchor))
                 continue;
 
             // 2. Create a buffer for easier backtracking
-            char[] buffer = new char[BoardConstants.SIZE];
-            boolean[] placed = new boolean[BoardConstants.SIZE];
-            char[] rackCopy = rack.clone();
-            TrieNode trieRoot = dictionary.getRoot();
-            int depth = 0;
+            currentRow = square / BoardConstants.SIZE;
+            currentCol = square % BoardConstants.SIZE;
+
+            char[] horiBuffer = horiLines[currentRow].clone();
+            boolean[] horiPlaced = new boolean[BoardConstants.SIZE];
+
+            char[] vertBuffer = vertLines[currentCol].clone();
+            boolean[] vertPlaced = new boolean[BoardConstants.SIZE];
 
             // 3. Recursively start building words from the anchor in both vertical and
             // horizontal directions.
-            reverseBuild(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.LEFT, rack.length);
-            rackCopy = rack.clone(); // reset rack
-            reverseBuild(anchorPosition, trieRoot, rackCopy, buffer, placed, depth, Position.Step.UP, rack.length);
+            reverseBuild(rack.clone(), horiBuffer, horiPlaced, currentCol, rack.length, true);
+            reverseBuild(rack.clone(), vertBuffer, vertPlaced, currentRow, rack.length, false);
 
             // 4. If we found any moves for this anchor, stop here
             if (nextMoves != null && !nextMoves.isEmpty()) {
@@ -83,30 +107,72 @@ public class LegalMoveIterator implements Iterator<Move> {
         }
     }
 
-    // --- reverseBuild (fixed) ---
-    private void reverseBuild(Position anchor, TrieNode node,
-            char[] rack, char[] buffer, boolean[] placed,
-            int depth, Position.Step backStep, int limit) {
+    private void reverseBuild(char[] rack, char[] buffer, boolean[] placed, int depth, int limit,
+            boolean isHorizontal) {
+        // Build forward from the anchor
+        buildWord(trieRoot, rack, buffer, placed, depth, limit, isHorizontal);
 
-        // build forward from the anchor using the opposite of 'backStep'
-        Position.Step forwardStep = Position.Step.reverseStep(backStep);
-        buildWord(anchor, node, rack, buffer, placed, depth, forwardStep);
+        // If we've hit the edge of the board, stop
+        if (depth < 0)
+            return;
 
+        // If the current square is already filled, go to the next square
+        if (buffer[depth] != GameConstants.EMPTY_SQUARE) {
+            reverseBuild(rack, buffer, placed, depth - 1, limit, isHorizontal);
+            return;
+        }
+
+        // If we've placed all tiles, there's nothing more to do
         if (limit == 0)
             return;
 
         // Try adding one more letter before the anchor (in the backStep direction)
         for (int i = 0; i < rack.length; i++) {
             char tile = rack[i];
-            Optional<TrieNode> child = node.getChild(tile);
-            if (child.isEmpty())
+
+            // If the letter is a blank, try all possible letters
+            if (tile == BagConstants.BLANK) {
+                for (char c : BagConstants.TILE_DATA.keySet()) {
+                    if (c == BagConstants.BLANK)
+                        continue;
+                    char lower = Character.toLowerCase(c);
+
+                    // Check if placing this tile here would form a valid cross word
+                    if (!isCrossWordValid(lower, depth, isHorizontal))
+                        continue;
+
+                    // Place the blank tile in the buffer
+                    buffer[depth] = lower;
+                    placed[depth] = true;
+
+                    // Remove the blank from the rack
+                    char[] newRack = new char[rack.length - 1];
+                    for (int k = 0, j = 0; k < rack.length; k++) {
+                        if (k == i)
+                            continue;
+                        newRack[j++] = rack[k];
+                    }
+
+                    // Build on to the left
+                    reverseBuild(newRack, buffer, placed, depth - 1, limit - 1, isHorizontal);
+
+                    // Backtrack
+                    buffer[depth] = GameConstants.EMPTY_SQUARE; // Set it to EMPTY_SQUARE
+                    placed[depth] = false;
+                }
+                // Continue here because we've tried all blank options
+                continue;
+            }
+
+            // Build for a normal tile
+            if (!isCrossWordValid(tile, depth, isHorizontal))
                 continue;
 
-            // Add tile to buffer at current depth
+            // Place the blank tile in the buffer
             buffer[depth] = tile;
             placed[depth] = true;
 
-            // Remove a tile from the rack — copy all except index i
+            // Remove the tile from the rack
             char[] newRack = new char[rack.length - 1];
             for (int k = 0, j = 0; k < rack.length; k++) {
                 if (k == i)
@@ -114,152 +180,208 @@ public class LegalMoveIterator implements Iterator<Move> {
                 newRack[j++] = rack[k];
             }
 
-            // Step backwards on the board (one square further away from the anchor)
-            Position prev = anchor.step(backStep);
+            // Build on to the left
+            reverseBuild(newRack, buffer, placed, depth - 1, limit - 1, isHorizontal);
 
-            // Recurse deeper (add longer prefix). Note we keep backStep the same.
-            reverseBuild(prev, child.get(), newRack, buffer, placed, depth + 1, backStep, limit - 1);
-
-            placed[depth] = false; // backtrack
+            // Backtrack
+            buffer[depth] = GameConstants.EMPTY_SQUARE;
+            placed[depth] = false;
         }
     }
 
-    private void buildWord(
-            Position pos, // current position on board (the anchor for the first iteration)
-            TrieNode node, // current Trie node
-            char[] rack, // letters available
-            char[] buffer, // letters placed so far (in order along 'step' direction)
-            boolean[] placed,
-            int depth,
-            Position.Step step // horizontal or vertical
-    ) {
-        // 1. Current square out-of-bounds → stop recursion
-        if (board.isOutOfBounds(pos))
+    // Builds all words starting from 'depth' in the buffer, using letters from
+    // 'rack'
+    // and following the Trie from 'node'
+    private void buildWord(TrieNode node, char[] rack, char[] buffer, boolean[] placed, int depth, int limit,
+            boolean isHorizontal) {
+        // Current square out-of-bounds → stop recursion
+        if (depth >= BoardConstants.SIZE)
             return;
 
-        // 2. If square has a fixed tile
-        if (!board.isEmpty(pos)) {
-            char letter = board.tileAt(pos);
+        // If square has a fixed tile
+        if (buffer[depth] != GameConstants.EMPTY_SQUARE) {
+            char letter = buffer[depth];
+
+            // Gets the child node for this letter, or returns if there is none
             Optional<TrieNode> child = node.getChild(letter);
             if (child.isEmpty())
                 return;
 
-            buffer[depth] = letter;
-            placed[depth] = false;
-            buildWord(pos.step(step), child.get(), rack, buffer, placed, depth + 1, step);
+            buildWord(child.get(), rack, buffer, placed, depth + 1, limit, isHorizontal);
 
-            // record moves ending at this node
+            // Record moves ending at this node
             if (child.get().isWord)
-                recordMove(pos, step, buffer, placed, depth + 1);
+                recordMove(buffer, placed, isHorizontal);
 
             return;
         }
 
-        // 3. If square is empty → try rack tiles
+        // If square is empty -> try rack tiles
         for (int i = 0; i < rack.length; i++) {
             char tile = rack[i];
+
+            // Blank tile
+            if (tile == BagConstants.BLANK) {
+                // Try all possible letters for the blank
+                for (char c : BagConstants.TILE_DATA.keySet()) {
+                    if (c == BagConstants.BLANK)
+                        continue;
+                    char lower = Character.toLowerCase(c);
+
+                    // Gets the child node for this letter, or returns if there is none
+                    Optional<TrieNode> child = node.getChild(lower);
+                    if (child.isEmpty())
+                        continue;
+
+                    // Check if we can place this letter here (cross word valid)
+                    if (!isCrossWordValid(lower, depth, isHorizontal))
+                        continue;
+
+                    buffer[depth] = lower;
+                    placed[depth] = true;
+
+                    // Remove the blank from the rack
+                    char[] newRack = new char[rack.length - 1];
+                    for (int k = 0, j = 0; k < rack.length; k++) {
+                        if (k == i)
+                            continue;
+                        newRack[j++] = rack[k];
+                    }
+
+                    buildWord(child.get(), newRack, buffer, placed, depth + 1, limit - 1, isHorizontal);
+
+                    // Record moves ending at this node
+                    if (child.get().isWord)
+                        recordMove(buffer, placed, isHorizontal);
+
+                    // Backtrack
+                    buffer[depth] = GameConstants.EMPTY_SQUARE;
+                    placed[depth] = false;
+                }
+                continue;
+            }
+
+            // Normal tile
             Optional<TrieNode> child = node.getChild(tile);
             if (child.isEmpty())
                 continue;
-            if (!isCrossWordValid(pos, tile, Position.Step.otherStep(step)))
+
+            if (!isCrossWordValid(tile, depth, isHorizontal))
                 continue;
 
             buffer[depth] = tile;
             placed[depth] = true;
 
-            // rack is a char[] containing all available tiles
+            // Remove the blank from the rack
             char[] newRack = new char[rack.length - 1];
             for (int k = 0, j = 0; k < rack.length; k++) {
                 if (k == i)
-                    continue; // skip the tile we just used
-                newRack[j++] = rack[k]; // copy the rest
+                    continue;
+                newRack[j++] = rack[k];
             }
 
-            buildWord(pos.step(step), child.get(), newRack, buffer, placed, depth + 1, step);
+            buildWord(child.get(), newRack, buffer, placed, depth + 1, limit - 1, isHorizontal);
 
-            placed[depth] = false;
-
-            // record moves ending at this node
+            // Record moves ending at this node
             if (child.get().isWord)
-                recordMove(pos, step, buffer, placed, depth + 1);
+                recordMove(buffer, placed, isHorizontal);
+
+            // Backtrack
+            buffer[depth] = GameConstants.EMPTY_SQUARE;
+            placed[depth] = false;
         }
     }
 
-    private boolean isCrossWordValid(Position pos, char tile, Position.Step perpStep) {
-        Position.Step reverseStep = Position.Step.reverseStep(perpStep);
+    // Check if placing 'letter' at 'depth' in the buffer (which corresponds to a
+    // position on the board)
+    // Check if placing 'letter' at 'depth' in the buffer (which corresponds to a
+    // position on the board)
+    private boolean isCrossWordValid(char letter, int depth, boolean isHorizontal) {
+        // Get the correctly associated line (clone it because we will modify)
+        char[] associatedLine = (isHorizontal ? vertLines[depth] : horiLines[depth]).clone();
 
-        // 1) Find start of the cross word
-        Position start = pos;
-        while (!board.isOutOfBounds(start.step(reverseStep)) && !board.isEmpty(start.step(reverseStep))) {
-            start = start.step(reverseStep);
+        // The index inside associatedLine that corresponds to the place we're testing
+        int pos = isHorizontal ? currentRow : currentCol;
+
+        // Put the candidate letter into the cloned line
+        associatedLine[pos] = letter;
+
+        // Find start and end of the contiguous word that includes 'pos'
+        int start = pos;
+        while (start > 0 && associatedLine[start - 1] != GameConstants.EMPTY_SQUARE) {
+            start--;
+        }
+        int end = pos;
+        while (end < BoardConstants.SIZE - 1 && associatedLine[end + 1] != GameConstants.EMPTY_SQUARE) {
+            end++;
         }
 
-        // 2) Build the word
-        StringBuilder sb = new StringBuilder();
-        Position current = start;
-        while (!board.isOutOfBounds(current) && (!board.isEmpty(current) || current.equals(pos))) {
-            if (current.equals(pos)) {
-                sb.append(tile); // include candidate tile
-            } else {
-                sb.append(board.tileAt(current));
-            }
-            current = current.step(perpStep);
-        }
-
-        // 3) If the cross word has length 1, no new word is formed -> valid
-        if (sb.length() == 1)
+        int length = end - start + 1;
+        if (length == 1) {
+            // No adjacent tiles → no crossword formed
             return true;
+        }
 
-        // 4) Validate the word
-        return dictionary.isWord(sb.toString());
+        String word = new String(associatedLine, start, length);
+        return dictionary.isWord(word);
     }
 
-    // --- recordMove (fixed) ---
-    // Now `step` is the forward direction: from word start --> word end
-    private void recordMove(Position endPos, Position.Step step,
-            char[] buffer, boolean[] placed, int depth) {
+    // Record a move found in the buffer, where 'placed' indicates which letters
+    // were placed by us and which were already on the board
+    private void recordMove(char[] buffer, boolean[] placed, boolean isHorizontal) {
+        int start = 0, end = BoardConstants.SIZE - 1;
 
-        // Compute start by stepping from endPos towards the start (reverse of forward
-        // step)
-        Position.Step backwards = Position.Step.reverseStep(step);
-        Position start = endPos;
-        for (int i = 1; i < depth; i++) {
-            start = start.step(backwards);
+        // Find the span of the word (skip leading/trailing empty squares)
+        while (start < BoardConstants.SIZE && buffer[start] == GameConstants.EMPTY_SQUARE) {
+            start++;
+        }
+        while (end >= 0 && buffer[end] == GameConstants.EMPTY_SQUARE) {
+            end--;
         }
 
-        // Walk forwards from start to collect placed positions and letters
-        List<Position> positionsList = new ArrayList<>();
-        List<Character> lettersList = new ArrayList<>();
-        Position p = start;
-        boolean placedAtLeastOne = false;
-
-        for (int i = 0; i < depth; i++) {
-            if (placed[i]) {
-                positionsList.add(p);
-                lettersList.add(buffer[i]);
-                placedAtLeastOne = true;
-            }
-            p = p.step(step); // move forward (start -> end)
-        }
-
-        if (!placedAtLeastOne)
+        // No word found
+        if (start > end) {
             return;
-
-        Position[] positions = positionsList.toArray(new Position[0]);
-        char[] letters = new char[lettersList.size()];
-        for (int i = 0; i < letters.length; i++) {
-            letters[i] = lettersList.get(i);
         }
+
+        // Collect new tile placements
+        List<Position> posList = new ArrayList<>();
+        List<Character> charList = new ArrayList<>();
+
+        for (int i = start; i <= end; i++) {
+            if (placed[i]) {
+                Position pos = isHorizontal
+                        ? new Position(currentRow, i)
+                        : new Position(i, currentCol);
+
+                posList.add(pos);
+                charList.add(buffer[i]);
+            }
+        }
+
+        // If we didn’t place any new tiles, it’s not a legal move
+        if (posList.isEmpty()) {
+            return;
+        }
+
+        // Convert lists into arrays
+        Position[] positions = posList.toArray(new Position[0]);
+        char[] letters = new char[charList.size()];
+        for (int i = 0; i < charList.size(); i++) {
+            letters[i] = charList.get(i);
+        }
+
+        Move move = new Move(positions, letters);
 
         if (nextMoves == null) {
             nextMoves = new ArrayDeque<>();
         }
-        nextMoves.add(new Move(positions, letters));
+        nextMoves.push(move);
     }
 
     @Override
     public boolean hasNext() {
-        return nextMoves != null;
+        return (nextMoves != null && !nextMoves.isEmpty());
     }
 
     @Override

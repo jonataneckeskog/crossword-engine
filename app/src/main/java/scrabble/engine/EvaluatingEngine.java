@@ -50,7 +50,7 @@ public class EvaluatingEngine implements Engine {
                     double totalEval = 0;
                     for (Rack rack : firstBatchStates) {
                         GameState newGameState = GameState.fromPlayerView(newPlayerView, rack);
-                        totalEval += evaluator.evaluate(newGameState);
+                        totalEval += evaluator.evaluate(newGameState, playerView.getPlayerId());
                     }
 
                     double averageEval = totalEval / firstBatchStates.size();
@@ -68,7 +68,7 @@ public class EvaluatingEngine implements Engine {
 
             for (Move move : moveMap.keySet()) {
                 GameState newState = GameState.fromPlayerView(moveMap.get(move), rack);
-                double eval = evaluator.evaluate(newState);
+                double eval = evaluator.evaluate(newState, playerView.getPlayerId());
 
                 // Update running average for this move
                 double oldAvg = moveEvaluations.getOrDefault(move, 0.0);

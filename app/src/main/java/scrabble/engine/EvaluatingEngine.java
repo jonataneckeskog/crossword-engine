@@ -14,10 +14,13 @@ import java.util.Iterator;
 import java.util.HashMap;
 
 public class EvaluatingEngine implements Engine {
+    private MoveGenerator moveGenerator;
     private Evaluator evaluator;
-    private boolean isActive = true;
+    private volatile boolean isActive = true;
+    private Thread searchThread;
 
-    public EvaluatingEngine(Evaluator evaluator) {
+    public EvaluatingEngine(MoveGenerator moveGenerator, Evaluator evaluator) {
+        this.moveGenerator = moveGenerator;
         this.evaluator = evaluator;
     }
 
@@ -41,7 +44,7 @@ public class EvaluatingEngine implements Engine {
 
         // Start processing the original batch, break immidiately if time runs out
         Map<Move, PlayerView> moveMap = new HashMap<>();
-        MoveGenerator.streamLegalMoves(playerView)
+        moveGenerator.streamLegalMoves(playerView)
                 .takeWhile(move -> isActive && System.currentTimeMillis() - startTime < maxTimeMillis)
                 .forEach(move -> {
                     PlayerView newPlayerView = playerView.applyMove(move);
@@ -93,17 +96,26 @@ public class EvaluatingEngine implements Engine {
     }
 
     @Override
-    public Move chooseMove(PlayerView playerView, long timeMillis) {
-        return runSearch(playerView, timeMillis, null);
+    public void search(PlayerView playerView, SearchListener listener) {
+        isActive = true; // reset for each new search
+        searchThread = new Thread(() -> runSearch(playerView, Long.MAX_VALUE, listener));
+        searchThread.start();
     }
 
     @Override
-    public void search(PlayerView playerView, SearchListener listener) {
-        runSearch(playerView, Long.MAX_VALUE, listener);
+    public Move chooseMove(PlayerView playerView, long timeMillis) {
+        isActive = true; // reset for each new move
+        return runSearch(playerView, timeMillis, null);
     }
 
     @Override
     public void stop() {
         isActive = false;
+        if (searchThread != null && searchThread.isAlive()) {
+            try {
+                searchThread.join(1000); // wait up to 1s for search to finish
+            } catch (InterruptedException ignored) {
+            }
+        }
     }
 }

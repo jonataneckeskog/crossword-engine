@@ -6,7 +6,6 @@ import scrabble.core.components.DrawHandler;
 import scrabble.core.components.Rack;
 
 import scrabble.rules.MoveScorer;
-import scrabble.rules.MoveValidator;
 import scrabble.rules.game.*;
 
 public final class GameState {
@@ -65,15 +64,13 @@ public final class GameState {
 
         Bag newBag = playerView.getBag().removeTiles(otherRack.getLetters());
         Rack[] newRacks = new Rack[2];
-        newRacks[1 - playerId] = playerView.getRack();
+        newRacks[playerId] = playerView.getRack();
+        newRacks[1 - playerId] = otherRack;
 
         return new GameState(board, newBag, newRacks, playerView.getScores(), playerView.isFirstMove());
     }
 
-    public GameState applyMove(Move move, boolean validate, int playerId) {
-        if (validate && !MoveValidator.isValid(board, move))
-            return this;
-
+    public GameState applyMove(Move move, int playerId) {
         Board newBoard = board.placeWord(move);
 
         int[] newScores = scores.clone();

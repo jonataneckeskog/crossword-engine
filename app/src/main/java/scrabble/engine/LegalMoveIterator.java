@@ -26,6 +26,7 @@ public class LegalMoveIterator implements Iterator<Move> {
 
     // Iterator variable
     private Deque<Move> nextMoves = null;
+    private boolean firstMoveProcessed = false;
 
     // Temporary fiels, used for iteration
     private int square;
@@ -61,6 +62,9 @@ public class LegalMoveIterator implements Iterator<Move> {
         nextMoves = null;
 
         if (isFirstMove) {
+            if (firstMoveProcessed)
+                return;
+
             // Special case: first move must cover center square
             currentRow = BoardConstants.SIZE / 2;
             currentCol = BoardConstants.SIZE / 2;
@@ -74,6 +78,7 @@ public class LegalMoveIterator implements Iterator<Move> {
             reverseBuild(rack.clone(), horiBuffer, horiPlaced, currentCol, rack.length, true);
             reverseBuild(rack.clone(), vertBuffer, vertPlaced, currentRow, rack.length, false);
 
+            firstMoveProcessed = true;
             return;
         }
 
@@ -127,8 +132,15 @@ public class LegalMoveIterator implements Iterator<Move> {
             return;
 
         // Try adding one more letter before the anchor (in the backStep direction)
+        boolean[] triedLetters = new boolean[BagConstants.UNIQUE_TILES];
         for (int i = 0; i < rack.length; i++) {
             char tile = rack[i];
+
+            // Mark the tile as tried
+            int index = BagConstants.getIndex(tile);
+            if (triedLetters[index])
+                continue;
+            triedLetters[index] = true;
 
             // If the letter is a blank, try all possible letters
             if (tile == BagConstants.BLANK) {
@@ -138,7 +150,7 @@ public class LegalMoveIterator implements Iterator<Move> {
                     char lower = Character.toLowerCase(c);
 
                     // Check if placing this tile here would form a valid cross word
-                    if (!isCrossWordValid(lower, depth, isHorizontal))
+                    if (!isCrossWordValid(c, depth, isHorizontal))
                         continue;
 
                     // Place the blank tile in the buffer
@@ -209,16 +221,33 @@ public class LegalMoveIterator implements Iterator<Move> {
 
             buildWord(child.get(), rack, buffer, placed, depth + 1, limit, isHorizontal);
 
-            // Record moves ending at this node
-            if (child.get().isWord)
-                recordMove(buffer, placed, isHorizontal);
+            // If we're at a leaf node, record it
+            // Annoying fact: I used to record every time if the square was fixed, and
+            // finding that bug took me hours.
+            if (depth == BoardConstants.SIZE
+                    || (depth < BoardConstants.SIZE && buffer[depth + 1] == GameConstants.EMPTY_SQUARE)) {
+                if (child.get().isWord) {
+                    recordMove(buffer, placed, isHorizontal);
+                }
+                return;
+            }
 
             return;
         }
 
+        if (limit == 0)
+            return;
+
         // If square is empty -> try rack tiles
+        boolean[] triedLetters = new boolean[BagConstants.UNIQUE_TILES];
         for (int i = 0; i < rack.length; i++) {
             char tile = rack[i];
+
+            // Mark the tile as tried
+            int index = BagConstants.getIndex(tile);
+            if (triedLetters[index])
+                continue;
+            triedLetters[index] = true;
 
             // Blank tile
             if (tile == BagConstants.BLANK) {
@@ -234,7 +263,7 @@ public class LegalMoveIterator implements Iterator<Move> {
                         continue;
 
                     // Check if we can place this letter here (cross word valid)
-                    if (!isCrossWordValid(lower, depth, isHorizontal))
+                    if (!isCrossWordValid(c, depth, isHorizontal))
                         continue;
 
                     buffer[depth] = lower;
@@ -329,53 +358,48 @@ public class LegalMoveIterator implements Iterator<Move> {
     // Record a move found in the buffer, where 'placed' indicates which letters
     // were placed by us and which were already on the board
     private void recordMove(char[] buffer, boolean[] placed, boolean isHorizontal) {
-        int start = 0, end = BoardConstants.SIZE - 1;
-
-        // Find the span of the word (skip leading/trailing empty squares)
-        while (start < BoardConstants.SIZE && buffer[start] == GameConstants.EMPTY_SQUARE) {
-            start++;
+        // 1) find min/max indices where we placed tiles
+        int minPlaced = -1, maxPlaced = -1;
+        for (int i = 0; i < BoardConstants.SIZE; i++) {
+            if (placed[i]) {
+                if (minPlaced == -1)
+                    minPlaced = i;
+                maxPlaced = i;
+            }
         }
-        while (end >= 0 && buffer[end] == GameConstants.EMPTY_SQUARE) {
-            end--;
-        }
+        if (minPlaced == -1)
+            return; // nothing placed
 
-        // No word found
-        if (start > end) {
-            return;
-        }
+        // 2) expand to include contiguous existing tiles adjacent to placed tiles
+        int start = minPlaced;
+        while (start > 0 && buffer[start - 1] != GameConstants.EMPTY_SQUARE)
+            start--;
+        int end = maxPlaced;
+        while (end < BoardConstants.SIZE - 1 && buffer[end + 1] != GameConstants.EMPTY_SQUARE)
+            end++;
 
-        // Collect new tile placements
+        // 3) collect only the positions/letters we actually placed
         List<Position> posList = new ArrayList<>();
         List<Character> charList = new ArrayList<>();
-
         for (int i = start; i <= end; i++) {
             if (placed[i]) {
-                Position pos = isHorizontal
-                        ? new Position(currentRow, i)
-                        : new Position(i, currentCol);
-
+                Position pos = isHorizontal ? new Position(currentRow, i) : new Position(i, currentCol);
                 posList.add(pos);
                 charList.add(buffer[i]);
             }
         }
-
-        // If we didn’t place any new tiles, it’s not a legal move
-        if (posList.isEmpty()) {
+        if (posList.isEmpty())
             return;
-        }
 
-        // Convert lists into arrays
         Position[] positions = posList.toArray(new Position[0]);
         char[] letters = new char[charList.size()];
-        for (int i = 0; i < charList.size(); i++) {
+        for (int i = 0; i < letters.length; i++)
             letters[i] = charList.get(i);
-        }
 
         Move move = new Move(positions, letters);
-
-        if (nextMoves == null) {
+        if (nextMoves == null)
             nextMoves = new ArrayDeque<>();
-        }
+
         nextMoves.push(move);
     }
 

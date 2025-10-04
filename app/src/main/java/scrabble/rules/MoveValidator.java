@@ -9,7 +9,13 @@ import scrabble.rules.game.*;
 import scrabble.core.Position;
 
 public final class MoveValidator {
-    public static boolean isValid(Board board, Move move) {
+    private TrieDictionary dictionary;
+
+    public MoveValidator(TrieDictionary dictionary) {
+        this.dictionary = dictionary;
+    }
+
+    public boolean isValid(Board board, Move move) {
         // 1. Validate the move
         List<Position> positions = Arrays.asList(move.getPositions());
         if (positions.isEmpty()) {
@@ -55,7 +61,6 @@ public final class MoveValidator {
             }
         }
 
-        TrieDictionary dictionary = DictionaryProvider.get();
         for (char[] line : rows) {
             if (!isLineValid(line, dictionary))
                 return false;
@@ -82,7 +87,9 @@ public final class MoveValidator {
                 line[j] = GameConstants.EMPTY_SQUARE;
             }
 
-            if (!dictionary.isWord(sb.toString()))
+            String word = sb.toString();
+
+            if (word.length() > 1 && !dictionary.isWord(sb.toString()))
                 return false;
         }
 

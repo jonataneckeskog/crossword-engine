@@ -5,14 +5,14 @@ import org.junit.jupiter.api.Test;
 import scrabble.core.GameState;
 import scrabble.core.PlayerView;
 import scrabble.core.Position;
+import scrabble.rules.MoveValidator;
 import scrabble.rules.TrieDictionary;
 import scrabble.core.Move;
 import scrabble.rules.game.*;
 
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class LegalMoveIteratorTest {
     private GameState gameState;
@@ -90,7 +90,7 @@ public class LegalMoveIteratorTest {
             moves.add(legalMoveIterator.next());
         }
 
-        GameState newState = gameState.applyMove(moves.get(0), false, 0);
+        GameState newState = gameState.applyMove(moves.get(0), 0);
         PlayerView opponentView = PlayerView.fromGameState(newState, 1);
 
         LegalMoveIterator newIterator = new LegalMoveIterator(opponentView, new TrieDictionary(List.of("ANDD")));
@@ -98,5 +98,37 @@ public class LegalMoveIteratorTest {
 
         assertTrue(newIterator.hasNext());
         opponentMoves.add(newIterator.next());
+    }
+
+    @Test
+    void testStrings() {
+        // Start a new empty game
+        String boardString = String.valueOf(GameConstants.EMPTY_SQUARE).repeat(BoardConstants.TOTAL_SIZE);
+        String bagToFirstMove = "XORANDIFELSE/STRINGS/AD/100/100";
+        String gameString = boardString + "/" + bagToFirstMove;
+
+        GameState gameState = GameState.stateFrom(gameString);
+        PlayerView playerView = PlayerView.fromGameState(gameState, 0);
+
+        // Create a simple dictionary containing a single word
+        List<String> words = new ArrayList<>();
+        words.add("SING");
+        words.add("RING");
+        words.add("RINGS");
+        words.add("STRING");
+        words.add("STRINGS");
+        TrieDictionary dictionary = new TrieDictionary(words);
+
+        LegalMoveIterator newIterator = new LegalMoveIterator(playerView, dictionary);
+        MoveValidator moveValidator = new MoveValidator(dictionary);
+
+        List<Move> moves = new ArrayList<>();
+        while (newIterator.hasNext()) {
+            Move move = newIterator.next();
+            assertTrue(moveValidator.isValid(playerView.getBoard(), move),
+                    "Invalid move: " + move);
+            assertFalse(moves.contains(move));
+            moves.add(move);
+        }
     }
 }

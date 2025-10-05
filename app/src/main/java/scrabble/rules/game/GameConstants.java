@@ -4,9 +4,27 @@ public final class GameConstants {
     private GameConstants() {
     }
 
-    public static final char EMPTY_SQUARE = '\u0000';
+    public static char EMPTY_SQUARE;
+    public static int BINGO_BONUS;
+    public static int RACK_SIZE;
 
-    public static final int BINGO_BONUS = 50;
+    private static boolean initialized = false;
 
-    public static final int RACK_SIZE = 7;
+    public static void initialize(GameData data) {
+        if (initialized)
+            return;
+
+        EMPTY_SQUARE = data.EMPTY_SQUARE;
+        BINGO_BONUS = data.BINGO_BONUS;
+        RACK_SIZE = data.RACK_SIZE;
+
+        initialized = true;
+    }
+
+    /** Helper class to represent JSON structure */
+    public static class GameData {
+        public char EMPTY_SQUARE;
+        public int BINGO_BONUS;
+        public int RACK_SIZE;
+    }
 }

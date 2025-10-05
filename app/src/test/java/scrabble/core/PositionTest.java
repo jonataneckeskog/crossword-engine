@@ -4,10 +4,18 @@ import org.junit.jupiter.api.Test;
 import scrabble.core.Position.Step;
 import scrabble.core.components.Board;
 import scrabble.rules.game.BoardConstants;
+import scrabble.rules.game.GameRules;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.BeforeAll;
+
 class PositionTest {
+
+    @BeforeAll
+    static void setup() {
+        GameRules.load("src/main/resources/scrabble.json"); // or correct path
+    }
 
     @Test
     void testFromIndex() {

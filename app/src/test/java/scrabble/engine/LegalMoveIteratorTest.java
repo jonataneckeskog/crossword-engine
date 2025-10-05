@@ -1,5 +1,6 @@
 package scrabble.engine;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scrabble.core.GameState;
@@ -18,6 +19,11 @@ public class LegalMoveIteratorTest {
     private GameState gameState;
     private PlayerView playerView;
     private LegalMoveIterator legalMoveIterator;
+
+    @BeforeAll
+    static void initialSetup() {
+        GameRules.load("src/main/resources/scrabble.json"); // or correct path
+    }
 
     @BeforeEach
     void setup() {

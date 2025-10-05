@@ -3,10 +3,18 @@ package scrabble.core.components;
 import org.junit.jupiter.api.Test;
 
 import scrabble.rules.game.BagConstants;
+import scrabble.rules.game.GameRules;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.BeforeAll;
+
 public class BagTest {
+
+    @BeforeAll
+    static void setup() {
+        GameRules.load("src/main/resources/scrabble.json"); // or correct path
+    }
 
     private static final String BAG_STRING_1 = "ABCDE";
     private static final String BAG_STRING_2 = "ABCDEFG";

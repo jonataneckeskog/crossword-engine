@@ -7,7 +7,14 @@ import scrabble.rules.game.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.BeforeAll;
+
 class BoardTest {
+
+    @BeforeAll
+    static void setup() {
+        GameRules.load("src/main/resources/scrabble.json"); // or correct path
+    }
 
     @Test
     void testEmptyBoard() {

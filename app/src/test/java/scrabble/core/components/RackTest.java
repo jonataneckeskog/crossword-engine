@@ -1,14 +1,21 @@
 package scrabble.core.components;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import scrabble.rules.game.GameConstants;
+import scrabble.rules.game.GameRules;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
 
 public class RackTest {
+
+    @BeforeAll
+    static void setup() {
+        GameRules.load("src/main/resources/scrabble.json"); // or correct path
+    }
 
     private static final String RACK_STRING_EMPTY = "";
     private static final String RACK_STRING_SIMPLE = "ABCDE";

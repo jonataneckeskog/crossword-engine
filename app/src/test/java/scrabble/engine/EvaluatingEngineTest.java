@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +15,7 @@ import scrabble.rules.MoveValidator;
 import scrabble.rules.TrieDictionary;
 import scrabble.rules.game.BoardConstants;
 import scrabble.rules.game.GameConstants;
+import scrabble.rules.game.GameRules;
 
 public class EvaluatingEngineTest {
     private GameState gameState;
@@ -23,6 +25,11 @@ public class EvaluatingEngineTest {
     private Evaluator evaluator;
     private EvaluatingEngine engine;
     private SearchListener listener;
+
+    @BeforeAll
+    static void initialSetup() {
+        GameRules.load("src/main/resources/scrabble.json"); // or correct path
+    }
 
     @BeforeEach
     void setup() {

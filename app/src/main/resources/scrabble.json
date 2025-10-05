@@ -7,7 +7,7 @@
     "board": {
         "SIZE": 15,
         "TOTAL_SIZE": 225,
-        "SCRABBLE_BOARD": [
+        "BOARD_BONUSES": [
             4,
             0,
             0,

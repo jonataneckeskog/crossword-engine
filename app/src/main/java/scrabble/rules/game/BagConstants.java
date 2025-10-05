@@ -45,7 +45,7 @@ public final class BagConstants {
     }
 
     public static boolean isValidLetter(char letter) {
-        return TILE_DATA.containsKey(Character.toUpperCase(letter));
+        return TILE_DATA.containsKey(letter);
     }
 
     public record LetterData(int count, int score) {

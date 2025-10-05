@@ -22,7 +22,7 @@ public class LegalMoveIteratorTest {
 
     @BeforeAll
     static void initialSetup() {
-        GameRules.load("src/main/resources/scrabble.json"); // or correct path
+        GameRules.load("src/main/resources/scrabble.json");
     }
 
     @BeforeEach
@@ -56,6 +56,33 @@ public class LegalMoveIteratorTest {
 
         assertEquals(6, moveSet.size());
         assertEquals(6, moves.size());
+    }
+
+    @Test
+    void testDuplicateSingleLetterMove() {
+        String boardString = String.valueOf(GameConstants.EMPTY_SQUARE).repeat(BoardConstants.TOTAL_SIZE);
+        String bagToFirstMove = "XORANDIFELSE/A/AD/100/100";
+        String gameString = boardString + "/" + bagToFirstMove;
+
+        GameState gameState = GameState.stateFrom(gameString);
+        PlayerView playerView = PlayerView.fromGameState(gameState, 0);
+
+        // Create a simple dictionary containing a single word
+        List<String> words = new ArrayList<>();
+        words.add("A");
+        TrieDictionary dictionary = new TrieDictionary(words);
+
+        LegalMoveIterator newIterator = new LegalMoveIterator(playerView, dictionary);
+        MoveValidator moveValidator = new MoveValidator(dictionary);
+
+        List<Move> moves = new ArrayList<>();
+        while (newIterator.hasNext()) {
+            Move move = newIterator.next();
+            assertTrue(moveValidator.isValid(playerView.getBoard(), move),
+                    "Invalid move: " + move);
+            assertFalse(moves.contains(move));
+            moves.add(move);
+        }
     }
 
     @Test
@@ -133,6 +160,113 @@ public class LegalMoveIteratorTest {
             Move move = newIterator.next();
             assertTrue(moveValidator.isValid(playerView.getBoard(), move),
                     "Invalid move: " + move);
+            assertFalse(moves.contains(move));
+            moves.add(move);
+        }
+    }
+
+    @Test
+    void testDoubleValidExtentionDuplicateDouble() {
+        String boardString = "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                ".......A......." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "...............";
+        boardString = boardString.replace('.', GameConstants.EMPTY_SQUARE);
+
+        String bagToFirstMove = "XORANDIFELSE/P/AD/100/100";
+        String gameString = boardString + "/" + bagToFirstMove;
+
+        GameState gameState = GameState.stateFrom(gameString);
+        PlayerView playerView = PlayerView.fromGameState(gameState, 0);
+
+        // Create a simple dictionary containing a single word
+        List<String> words = new ArrayList<>();
+        words.add("P");
+        TrieDictionary dictionary = new TrieDictionary(words);
+
+        LegalMoveIterator newIterator = new LegalMoveIterator(playerView, dictionary);
+        MoveValidator moveValidator = new MoveValidator(dictionary);
+
+        List<Move> moves = new ArrayList<>();
+        while (newIterator.hasNext()) {
+            Move move = newIterator.next();
+            if (!moveValidator.isValid(playerView.getBoard(), move)) {
+                System.out.println("hej");
+            }
+            assertTrue(moveValidator.isValid(playerView.getBoard(), move),
+                    "Invalid move: " + move);
+            if (moves.contains(move)) {
+                System.out.println("hej");
+            }
+            assertFalse(moves.contains(move));
+            moves.add(move);
+        }
+    }
+
+    @Test
+    void testAdvancedPosition() {
+        String boardString = "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                ".......A......." +
+                ".....SAND......" +
+                ".....C.D......." +
+                ".....R........." +
+                ".....A........." +
+                ".....B........." +
+                ".....B........." +
+                ".....L........." +
+                ".....E.........";
+        //////// 0123456789
+        boardString = boardString.replace('.', GameConstants.EMPTY_SQUARE);
+
+        String bagToFirstMove = "XORANDIFELSE/SQDSACN/AD/100/100";
+        String gameString = boardString + "/" + bagToFirstMove;
+
+        GameState gameState = GameState.stateFrom(gameString);
+        PlayerView playerView = PlayerView.fromGameState(gameState, 0);
+
+        // Create a simple dictionary containing a single word
+        List<String> words = new ArrayList<>();
+        words.add("AND");
+        words.add("SAND");
+        words.add("SCRABBLE"); // The 'SC' in this word helped me catch a but, thanks scrabble
+        words.add("AQ");
+        words.add("CQD");
+        words.add("SA");
+        words.add("QA");
+        words.add("CDQ");
+        words.add("AS");
+        TrieDictionary dictionary = new TrieDictionary(words);
+
+        LegalMoveIterator newIterator = new LegalMoveIterator(playerView, dictionary);
+        MoveValidator moveValidator = new MoveValidator(dictionary);
+
+        List<Move> moves = new ArrayList<>();
+        while (newIterator.hasNext()) {
+            Move move = newIterator.next();
+            if (!moveValidator.isValid(playerView.getBoard(), move)) {
+                System.out.println("hej");
+            }
+            assertTrue(moveValidator.isValid(playerView.getBoard(), move),
+                    "Invalid move: " + move);
+            if (moves.contains(move)) {
+                System.out.println("hej");
+            }
             assertFalse(moves.contains(move));
             moves.add(move);
         }

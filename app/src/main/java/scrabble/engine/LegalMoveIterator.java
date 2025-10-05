@@ -119,9 +119,6 @@ public class LegalMoveIterator implements Iterator<Move> {
 
     private void reverseBuild(char[] rack, char[] buffer, boolean[] placed, int depth, int limit,
             boolean isHorizontal) {
-        // Build forward from the anchor
-        buildWord(trieRoot, rack, buffer, placed, depth, limit, isHorizontal);
-
         // If we've hit the edge of the board, stop
         if (depth < 0)
             return;
@@ -133,6 +130,16 @@ public class LegalMoveIterator implements Iterator<Move> {
                 : depth * BoardConstants.SIZE + currentCol;
         if (triedAnchor[boardIndex])
             return;
+
+        // Find the real depth from where to build. If we don't do this, we will
+        // create invalid word extentions.
+        if (depth > 0 && buffer[depth - 1] != GameConstants.EMPTY_SQUARE) {
+            reverseBuild(rack, buffer, placed, depth - 1, limit, isHorizontal);
+            return;
+        }
+
+        // Build forward from the 'real' anchor
+        buildWord(trieRoot, rack, buffer, placed, depth, limit, isHorizontal);
 
         // If the current square is already filled, go to the next square
         if (buffer[depth] != GameConstants.EMPTY_SQUARE) {
@@ -214,15 +221,11 @@ public class LegalMoveIterator implements Iterator<Move> {
         }
     }
 
-    // Builds all words starting from 'depth' in the buffer, using letters from
-    // 'rack'
-    // and following the Trie from 'node'
+    // Builds all words starting from depth in the buffer, using letters from
+    // rack
+    // and following the Trie from node
     private void buildWord(TrieNode node, char[] rack, char[] buffer, boolean[] placed, int depth, int limit,
             boolean isHorizontal) {
-        // Current square out-of-bounds → stop recursion
-        if (depth >= BoardConstants.SIZE)
-            return;
-
         // If square has a fixed tile
         if (buffer[depth] != GameConstants.EMPTY_SQUARE) {
             char letter = buffer[depth];
@@ -234,19 +237,31 @@ public class LegalMoveIterator implements Iterator<Move> {
 
             buildWord(child.get(), rack, buffer, placed, depth + 1, limit, isHorizontal);
 
-            // If we're at a leaf node, record it
-            // Annoying fact: I used to record every time if the square was fixed, and
-            // finding that bug took me hours.
-            if (depth == BoardConstants.SIZE
-                    || (depth < BoardConstants.SIZE && buffer[depth + 1] == GameConstants.EMPTY_SQUARE)) {
-                if (child.get().isWord) {
-                    recordMove(buffer, placed, isHorizontal);
-                }
-                return;
-            }
-
             return;
         }
+
+        // Record moves ending at the previous node, but only when we've
+        // advanced *past* the anchor square. This prevents the reverseBuild
+        // path (depth <= anchor) from recording the same move again.
+        int anchorIndex = isHorizontal ? currentCol : currentRow;
+        boolean recordCondition;
+
+        if (this.rack.length - limit == 1) { // single-tile horizontal move
+            if (depth == 0)
+                return; // prevent buffer[-1] access
+            int boardIndex = currentRow * BoardConstants.SIZE + depth + 1; // Depth for the last square
+            recordCondition = isHorizontal && (boardIndex == square || isWordValid(buffer, depth - 1));
+        } else {
+            recordCondition = node.isWord;
+        }
+
+        if (recordCondition && depth > anchorIndex) {
+            recordMove(buffer, placed, isHorizontal);
+        }
+
+        // Current square out-of-bounds → stop recursion
+        if (depth >= BoardConstants.SIZE)
+            return;
 
         if (limit == 0)
             return;
@@ -292,10 +307,6 @@ public class LegalMoveIterator implements Iterator<Move> {
 
                     buildWord(child.get(), newRack, buffer, placed, depth + 1, limit - 1, isHorizontal);
 
-                    // Record moves ending at this node
-                    if (child.get().isWord)
-                        recordMove(buffer, placed, isHorizontal);
-
                     // Backtrack
                     buffer[depth] = GameConstants.EMPTY_SQUARE;
                     placed[depth] = false;
@@ -314,7 +325,7 @@ public class LegalMoveIterator implements Iterator<Move> {
             buffer[depth] = tile;
             placed[depth] = true;
 
-            // Remove the blank from the rack
+            // Remove the tile from the rack
             char[] newRack = new char[rack.length - 1];
             for (int k = 0, j = 0; k < rack.length; k++) {
                 if (k == i)
@@ -324,19 +335,13 @@ public class LegalMoveIterator implements Iterator<Move> {
 
             buildWord(child.get(), newRack, buffer, placed, depth + 1, limit - 1, isHorizontal);
 
-            // Record moves ending at this node
-            if (child.get().isWord)
-                recordMove(buffer, placed, isHorizontal);
-
             // Backtrack
             buffer[depth] = GameConstants.EMPTY_SQUARE;
             placed[depth] = false;
         }
     }
 
-    // Check if placing 'letter' at 'depth' in the buffer (which corresponds to a
-    // position on the board)
-    // Check if placing 'letter' at 'depth' in the buffer (which corresponds to a
+    // Check if placing letter at depth in the buffer (which corresponds to a
     // position on the board)
     private boolean isCrossWordValid(char letter, int depth, boolean isHorizontal) {
         // Get the correctly associated line (clone it because we will modify)
@@ -348,13 +353,18 @@ public class LegalMoveIterator implements Iterator<Move> {
         // Put the candidate letter into the cloned line
         associatedLine[pos] = letter;
 
+        return isWordValid(associatedLine, pos);
+    }
+
+    // Check if a word is valid once it's already placed in the buffer
+    private boolean isWordValid(char[] buffer, int depth) {
         // Find start and end of the contiguous word that includes 'pos'
-        int start = pos;
-        while (start > 0 && associatedLine[start - 1] != GameConstants.EMPTY_SQUARE) {
+        int start = depth;
+        while (start > 0 && buffer[start - 1] != GameConstants.EMPTY_SQUARE) {
             start--;
         }
-        int end = pos;
-        while (end < BoardConstants.SIZE - 1 && associatedLine[end + 1] != GameConstants.EMPTY_SQUARE) {
+        int end = depth;
+        while (end < BoardConstants.SIZE - 1 && buffer[end + 1] != GameConstants.EMPTY_SQUARE) {
             end++;
         }
 
@@ -364,7 +374,7 @@ public class LegalMoveIterator implements Iterator<Move> {
             return true;
         }
 
-        String word = new String(associatedLine, start, length);
+        String word = new String(buffer, start, length);
         return dictionary.isWord(word);
     }
 

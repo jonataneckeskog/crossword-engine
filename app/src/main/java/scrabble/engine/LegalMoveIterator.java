@@ -18,7 +18,7 @@ import java.util.Optional;
 
 public class LegalMoveIterator implements Iterator<Move> {
     // Fields
-    private TrieDictionary dictionary;
+    private final TrieDictionary dictionary;
     private final Board board;
     private final char[] rack;
     private final boolean isFirstMove;
@@ -27,6 +27,7 @@ public class LegalMoveIterator implements Iterator<Move> {
     // Iterator variable
     private Deque<Move> nextMoves = null;
     private boolean firstMoveProcessed = false;
+    private boolean[] triedAnchor;
 
     // Temporary fiels, used for iteration
     private int square;
@@ -48,11 +49,12 @@ public class LegalMoveIterator implements Iterator<Move> {
 
     public LegalMoveIterator(PlayerView playerView, TrieDictionary dictionary) {
         this.dictionary = dictionary;
-        board = playerView.getBoard();
-        rack = playerView.getRack().getLetters();
-        isFirstMove = playerView.isFirstMove();
+        this.board = playerView.getBoard();
+        this.rack = playerView.getRack().getLetters();
+        this.isFirstMove = playerView.isFirstMove();
+        this.trieRoot = dictionary.getRoot();
+        triedAnchor = new boolean[BoardConstants.TOTAL_SIZE];
         square = 0;
-        trieRoot = dictionary.getRoot();
         initializeBuffers();
         advance();
     }
@@ -104,7 +106,10 @@ public class LegalMoveIterator implements Iterator<Move> {
             reverseBuild(rack.clone(), horiBuffer, horiPlaced, currentCol, rack.length, true);
             reverseBuild(rack.clone(), vertBuffer, vertPlaced, currentRow, rack.length, false);
 
-            // 4. If we found any moves for this anchor, stop here
+            // 4. Mark the anchor square as tried
+            triedAnchor[square] = true;
+
+            // 5. If we found any moves for this anchor, stop here
             if (nextMoves != null && !nextMoves.isEmpty()) {
                 this.square++; // advance to the next square for next call
                 return;
@@ -119,6 +124,14 @@ public class LegalMoveIterator implements Iterator<Move> {
 
         // If we've hit the edge of the board, stop
         if (depth < 0)
+            return;
+
+        // If we hit an anchor from which we've already tried placing, return.
+        // Note that we don't need this extra check in buildWord, since buildWord
+        // only traverses the board RIGHT and DOWN.
+        int boardIndex = isHorizontal ? currentRow * BoardConstants.SIZE + depth
+                : depth * BoardConstants.SIZE + currentCol;
+        if (triedAnchor[boardIndex])
             return;
 
         // If the current square is already filled, go to the next square
@@ -137,10 +150,10 @@ public class LegalMoveIterator implements Iterator<Move> {
             char tile = rack[i];
 
             // Mark the tile as tried
-            int index = BagConstants.getIndex(tile);
-            if (triedLetters[index])
+            int tileIndex = BagConstants.getIndex(tile);
+            if (triedLetters[tileIndex])
                 continue;
-            triedLetters[index] = true;
+            triedLetters[tileIndex] = true;
 
             // If the letter is a blank, try all possible letters
             if (tile == BagConstants.BLANK) {

@@ -258,5 +258,59 @@ public class LegalMoveIteratorTest {
             assertFalse(moves.contains(move));
             moves.add(move);
         }
+        System.out.println("hej");
+    }
+
+    @Test
+    void testKnownNumberOfLegalMoves() {
+        String boardString = "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "......WORDS...." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "...............";
+        //////// 0123456789
+        boardString = boardString.replace('.', GameConstants.EMPTY_SQUARE);
+
+        String bagToFirstMove = "XORANDIFELSE/WORDS/AD/100/100";
+        String gameString = boardString + "/" + bagToFirstMove;
+
+        GameState gameState = GameState.stateFrom(gameString);
+        PlayerView playerView = PlayerView.fromGameState(gameState, 0);
+
+        // Create a simple dictionary containing a single word
+        List<String> words = new ArrayList<>();
+        words.add("WORD");
+        words.add("WORDS");
+        words.add("WW");
+        TrieDictionary dictionary = new TrieDictionary(words);
+
+        LegalMoveIterator newIterator = new LegalMoveIterator(playerView, dictionary);
+        MoveValidator moveValidator = new MoveValidator(dictionary);
+
+        List<Move> moves = new ArrayList<>();
+        while (newIterator.hasNext()) {
+            Move move = newIterator.next();
+            if (!moveValidator.isValid(playerView.getBoard(), move)) {
+                System.out.println("Debug");
+            }
+            assertTrue(moveValidator.isValid(playerView.getBoard(), move),
+                    "Invalid move: " + move);
+            if (moves.contains(move)) {
+                System.out.println("Debug");
+            }
+            assertFalse(moves.contains(move));
+            moves.add(move);
+        }
+        assertEquals(11, moves.size());
     }
 }

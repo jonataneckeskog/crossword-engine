@@ -27,12 +27,13 @@ public class LegalMoveIterator implements Iterator<Move> {
     // Iterator variable
     private Deque<Move> nextMoves = null;
     private boolean firstMoveProcessed = false;
-    private boolean[] triedAnchor;
+    private boolean[] triedAnchors;
 
     // Temporary fiels, used for iteration
     private int square;
     private int currentRow;
     private int currentCol;
+    private boolean recordedSingleMoveHorizontaly;
 
     private final char[][] horiLines = new char[BoardConstants.SIZE][BoardConstants.SIZE];
     private final char[][] vertLines = new char[BoardConstants.SIZE][BoardConstants.SIZE];
@@ -53,7 +54,7 @@ public class LegalMoveIterator implements Iterator<Move> {
         this.rack = playerView.getRack().getLetters();
         this.isFirstMove = playerView.isFirstMove();
         this.trieRoot = dictionary.getRoot();
-        triedAnchor = new boolean[BoardConstants.TOTAL_SIZE];
+        triedAnchors = new boolean[BoardConstants.TOTAL_SIZE];
         square = 0;
         initializeBuffers();
         advance();
@@ -66,6 +67,8 @@ public class LegalMoveIterator implements Iterator<Move> {
         if (isFirstMove) {
             if (firstMoveProcessed)
                 return;
+
+            recordedSingleMoveHorizontaly = false;
 
             // Special case: first move must cover center square
             currentRow = BoardConstants.SIZE / 2;
@@ -91,6 +94,8 @@ public class LegalMoveIterator implements Iterator<Move> {
             if (!board.isAnchor(anchor))
                 continue;
 
+            recordedSingleMoveHorizontaly = false;
+
             // 2. Create a buffer for easier backtracking
             currentRow = square / BoardConstants.SIZE;
             currentCol = square % BoardConstants.SIZE;
@@ -107,7 +112,7 @@ public class LegalMoveIterator implements Iterator<Move> {
             reverseBuild(rack.clone(), vertBuffer, vertPlaced, currentRow, rack.length, false);
 
             // 4. Mark the anchor square as tried
-            triedAnchor[square] = true;
+            triedAnchors[square] = true;
 
             // 5. If we found any moves for this anchor, stop here
             if (nextMoves != null && !nextMoves.isEmpty()) {
@@ -117,55 +122,55 @@ public class LegalMoveIterator implements Iterator<Move> {
         }
     }
 
-    /**
-     * Builds prefixes of words along the buffer, starting from the anchor square.
-     * For each new square it first checks if we are within the board. If not,
-     * it returns. If we are, it makes sure so that we haven't reached an anchor
-     * which
-     * we've already searched. Searching that square again would be pointless. If
-     * we're
-     * still clear, the function finds the starting square of the word by repeatedly
-     * calling itself. It then builds words for both clear and full squares on the
-     * board.
-     * 
-     * @param rack
-     * @param buffer
-     * @param placed
-     * @param depth
-     * @param limit
-     * @param isHorizontal
-     */
     private void reverseBuild(char[] rack, char[] buffer, boolean[] placed, int depth, int limit,
             boolean isHorizontal) {
         if (depth < 0)
             return;
 
-        int boardIndex = isHorizontal ? currentRow * BoardConstants.SIZE + depth
-                : depth * BoardConstants.SIZE + currentCol;
-        if (triedAnchor[boardIndex])
+        if (limit == 0)
             return;
 
-        if (depth > 0 && buffer[depth - 1] != GameConstants.EMPTY_SQUARE) {
-            reverseBuild(rack, buffer, placed, depth - 1, limit, isHorizontal);
+        // If we're at an anready explored anchor, abort mission movegeneration
+        int r = isHorizontal ? currentRow : depth;
+        int c = isHorizontal ? depth : currentCol;
+        if (triedAnchors[r * BoardConstants.SIZE + c])
             return;
+
+        // Calculate starting pos
+        int realStart = depth;
+        while (realStart > 0 && buffer[realStart - 1] != GameConstants.EMPTY_SQUARE) {
+            realStart--;
         }
 
-        // This catches the original anchor, among other random empty spaces
-        if (buffer[depth] == GameConstants.EMPTY_SQUARE) {
+        // If tile is filled
+        if (buffer[depth] != GameConstants.EMPTY_SQUARE) {
+            if (realStart == depth) { // If we happen to already be at the start of a word
+                if (realStart > 0)
+                    realStart--;
+                else
+                    return;
+            }
+            // Build one square back
+            reverseBuild(rack, buffer, placed, realStart, limit, isHorizontal);
+        }
+
+        // If tile is empty
+        else {
+            // Try to place all letters in the original position
             boolean[] triedLetters = new boolean[BagConstants.UNIQUE_TILES];
             for (int i = 0; i < rack.length; i++) {
                 char tile = rack[i];
+
+                // Mark the tile as tried
+                int tileIndex = BagConstants.getIndex(tile);
+                if (triedLetters[tileIndex])
+                    continue;
+                triedLetters[tileIndex] = true;
 
                 if (tile == BagConstants.BLANK) {
                     for (int u = 0; u < BagConstants.UNIQUE_TILES; u++) {
                         char blank = BagConstants.INDEX_TO_CHAR[u];
                         char lower = Character.toLowerCase(blank);
-
-                        // Mark the tile as tried
-                        int tileIndex = BagConstants.getIndex(blank);
-                        if (triedLetters[tileIndex])
-                            continue;
-                        triedLetters[tileIndex] = true;
 
                         // Build for a normal tile
                         if (!isCrossWordValid(blank, depth, isHorizontal))
@@ -184,10 +189,10 @@ public class LegalMoveIterator implements Iterator<Move> {
                         }
 
                         // Build Da Word
-                        buildWord(trieRoot, newRack, buffer, placed, depth, limit - 1, isHorizontal);
+                        buildWord(trieRoot, newRack, buffer, placed, realStart, limit - 1, isHorizontal);
 
-                        // Build on to the left
-                        reverseBuild(newRack, buffer, placed, depth - 1, limit - 1, isHorizontal);
+                        // Build on to the left using the real depth
+                        reverseBuild(newRack, buffer, placed, realStart, limit - 1, isHorizontal);
 
                         // Backtrack
                         buffer[depth] = GameConstants.EMPTY_SQUARE;
@@ -196,17 +201,11 @@ public class LegalMoveIterator implements Iterator<Move> {
                     return;
                 }
 
-                // Mark the tile as tried
-                int tileIndex = BagConstants.getIndex(tile);
-                if (triedLetters[tileIndex])
-                    continue;
-                triedLetters[tileIndex] = true;
-
                 // Build for a normal tile
                 if (!isCrossWordValid(tile, depth, isHorizontal))
                     continue;
 
-                // Place the blank tile in the buffer
+                // Place the tile in the buffer
                 buffer[depth] = tile;
                 placed[depth] = true;
 
@@ -219,75 +218,70 @@ public class LegalMoveIterator implements Iterator<Move> {
                 }
 
                 // Build Da Word
-                buildWord(trieRoot, newRack, buffer, placed, depth, limit - 1, isHorizontal);
+                buildWord(trieRoot, newRack, buffer, placed, realStart, limit - 1, isHorizontal);
 
                 // Build on to the left
-                reverseBuild(newRack, buffer, placed, depth - 1, limit - 1, isHorizontal);
+                reverseBuild(newRack, buffer, placed, realStart, limit - 1, isHorizontal);
 
                 // Backtrack
                 buffer[depth] = GameConstants.EMPTY_SQUARE;
                 placed[depth] = false;
             }
-
             return;
         }
-
-        // Here we know that the tile we're at is full, and it has an empty tile (or the
-        // edge of the board) next to it in the reverse direction.
-
-        // Build Da Word from the full square
-        buildWord(trieRoot, rack, buffer, placed, depth, limit, isHorizontal);
-
-        // If we don't have more tiles, we can't keep building anything new
-        if (limit == 0)
-            return;
-
-        // Now that we're at a full square, just continue building to the left
-        reverseBuild(rack, buffer, placed, depth - 1, limit, isHorizontal);
     }
 
-    /**
-     * Call an ambulance.
-     * Builds words in the normal directions of a scrabble game. First checks so
-     * that we're within the bounds of the board. If we are, it tests if the current
-     * square is empty. If it's empty, we check with the trie if there's any reason
-     * to
-     * continue building from here and if there's not, we stop. If the square is in
-     * fact
-     * empty, we record moves ending in the square before. Then we try placing all
-     * tiles
-     * and move on to the next square.
-     * 
-     * @param node
-     * @param rack
-     * @param buffer
-     * @param placed
-     * @param depth
-     * @param limit
-     * @param isHorizontal
-     */
     private void buildWord(TrieNode node, char[] rack, char[] buffer, boolean[] placed, int depth, int limit,
             boolean isHorizontal) {
         if (depth >= BoardConstants.SIZE)
             return;
 
+        // If the square is full, just continue
         if (buffer[depth] != GameConstants.EMPTY_SQUARE) {
             Optional<TrieNode> child = node.getChild(buffer[depth]);
-            if (child.isEmpty()) {
+            if (child.isEmpty())
                 return;
-            }
 
             buildWord(child.get(), rack, buffer, placed, depth + 1, limit, isHorizontal);
             return;
         }
 
-        // Normal record condition
-        int anchorIndex = isHorizontal ? currentCol : currentRow;
-        if (node.isWord && depth > anchorIndex) {
-            recordMove(buffer, placed, isHorizontal);
+        // Record move
+        boolean recordCondition;
+        if (this.rack.length - limit == 1) {
+            if (recordedSingleMoveHorizontaly) {
+                if (isHorizontal) {
+                    if (!node.isWord) {
+                        char[] lineToValidate = vertLines[currentCol].clone();
+                        lineToValidate[currentRow] = buffer[currentCol];
+                        recordCondition = isWordValid(lineToValidate, currentRow, false);
+                        recordedSingleMoveHorizontaly = recordCondition;
+                    } else {
+                        recordCondition = true;
+                    }
+                } else {
+                    recordCondition = false;
+                }
+            } else {
+                if (!isHorizontal) {
+                    if (!node.isWord) {
+                        char[] lineToValidate = horiLines[currentRow].clone();
+                        lineToValidate[currentCol] = buffer[currentRow];
+                        recordCondition = isWordValid(lineToValidate, currentCol, false);
+                        recordedSingleMoveHorizontaly = recordCondition;
+                    } else {
+                        recordCondition = true;
+                    }
+                } else {
+                    recordCondition = false;
+                }
+            }
+        } else {
+            recordCondition = node.isWord;
         }
+        if (recordCondition)
+            recordMove(buffer, placed, isHorizontal);
 
-        // If we're out of letters, return
         if (limit == 0)
             return;
 
@@ -296,18 +290,18 @@ public class LegalMoveIterator implements Iterator<Move> {
         for (int i = 0; i < limit; i++) {
             char tile = rack[i];
 
+            // Mark the tile as tried
+            int tileIndex = BagConstants.getIndex(tile);
+            if (triedLetters[tileIndex])
+                continue;
+            triedLetters[tileIndex] = true;
+
             if (tile == BagConstants.BLANK) {
                 for (int u = 0; u < BagConstants.UNIQUE_TILES; u++) {
                     char blank = BagConstants.INDEX_TO_CHAR[u];
                     char lower = Character.toLowerCase(blank);
 
-                    // Mark the tile as tried
-                    int tileIndex = BagConstants.getIndex(blank);
-                    if (triedLetters[tileIndex])
-                        continue;
-                    triedLetters[tileIndex] = true;
-
-                    // Normal tile
+                    // Treat the blank as a normal tile
                     Optional<TrieNode> child = node.getChild(blank);
                     if (child.isEmpty())
                         continue;
@@ -334,12 +328,6 @@ public class LegalMoveIterator implements Iterator<Move> {
                 }
                 return;
             }
-
-            // Mark the tile as tried
-            int tileIndex = BagConstants.getIndex(tile);
-            if (triedLetters[tileIndex])
-                continue;
-            triedLetters[tileIndex] = true;
 
             // Normal tile
             Optional<TrieNode> child = node.getChild(tile);
@@ -380,11 +368,11 @@ public class LegalMoveIterator implements Iterator<Move> {
         // Put the candidate letter into the cloned line
         associatedLine[pos] = letter;
 
-        return isWordValid(associatedLine, pos);
+        return isWordValid(associatedLine, pos, true);
     }
 
     // Check if a word is valid once it's already placed in the buffer
-    private boolean isWordValid(char[] buffer, int depth) {
+    private boolean isWordValid(char[] buffer, int depth, boolean allow1s) {
         // Find start and end of the contiguous word that includes 'pos'
         int start = depth;
         while (start > 0 && buffer[start - 1] != GameConstants.EMPTY_SQUARE) {
@@ -396,7 +384,7 @@ public class LegalMoveIterator implements Iterator<Move> {
         }
 
         int length = end - start + 1;
-        if (length == 1) {
+        if (allow1s && length == 1) {
             // No adjacent tiles → no crossword formed
             return true;
         }

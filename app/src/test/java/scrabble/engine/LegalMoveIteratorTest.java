@@ -75,6 +75,8 @@ public class LegalMoveIteratorTest {
         LegalMoveIterator newIterator = new LegalMoveIterator(playerView, dictionary);
         MoveValidator moveValidator = new MoveValidator(dictionary);
 
+        assertTrue(newIterator.hasNext());
+
         List<Move> moves = new ArrayList<>();
         while (newIterator.hasNext()) {
             Move move = newIterator.next();
@@ -196,22 +198,8 @@ public class LegalMoveIteratorTest {
         TrieDictionary dictionary = new TrieDictionary(words);
 
         LegalMoveIterator newIterator = new LegalMoveIterator(playerView, dictionary);
-        MoveValidator moveValidator = new MoveValidator(dictionary);
 
-        List<Move> moves = new ArrayList<>();
-        while (newIterator.hasNext()) {
-            Move move = newIterator.next();
-            if (!moveValidator.isValid(playerView.getBoard(), move)) {
-                System.out.println("hej");
-            }
-            assertTrue(moveValidator.isValid(playerView.getBoard(), move),
-                    "Invalid move: " + move);
-            if (moves.contains(move)) {
-                System.out.println("hej");
-            }
-            assertFalse(moves.contains(move));
-            moves.add(move);
-        }
+        assertFalse(newIterator.hasNext());
     }
 
     @Test

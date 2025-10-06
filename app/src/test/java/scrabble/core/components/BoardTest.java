@@ -73,4 +73,58 @@ class BoardTest {
         Board board3 = board1.placeWord(new Move(new Position[] { new Position(0, 0) }, new char[] { 'A' }));
         assertNotEquals(board1, board3);
     }
+
+    @Test
+    void testIsAnchor() {
+        String boardString1 = "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                ".......A......." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "...............";
+        boardString1 = boardString1.replace('.', GameConstants.EMPTY_SQUARE);
+        Board board1 = Board.fromString(boardString1);
+
+        assertTrue(board1.isAnchor(new Position(7, 6)));
+        assertTrue(board1.isAnchor(new Position(7, 8)));
+        assertTrue(board1.isAnchor(new Position(6, 7)));
+        assertTrue(board1.isAnchor(new Position(8, 7)));
+        assertFalse(board1.isAnchor(new Position(7, 7)));
+
+        String boardString2 = "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                ".......A......." +
+                ".......N......." +
+                ".......D......." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "...............";
+        boardString2 = boardString2.replace('.', GameConstants.EMPTY_SQUARE);
+        Board board2 = Board.fromString(boardString2);
+
+        assertTrue(board2.isAnchor(new Position(5, 6)));
+        assertTrue(board2.isAnchor(new Position(6, 6)));
+        assertTrue(board2.isAnchor(new Position(7, 6)));
+        assertTrue(board2.isAnchor(new Position(4, 7)));
+        assertTrue(board2.isAnchor(new Position(8, 7)));
+        assertTrue(board2.isAnchor(new Position(5, 8)));
+        assertTrue(board2.isAnchor(new Position(6, 8)));
+        assertTrue(board2.isAnchor(new Position(7, 8)));
+    }
 }

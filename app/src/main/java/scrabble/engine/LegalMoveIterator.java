@@ -247,38 +247,19 @@ public class LegalMoveIterator implements Iterator<Move> {
         }
 
         // Record move
-        boolean recordCondition;
-        if (this.rack.length - limit == 1) {
-            if (recordedSingleMoveHorizontaly) {
-                if (isHorizontal) {
-                    if (!node.isWord) {
-                        char[] lineToValidate = vertLines[currentCol].clone();
-                        lineToValidate[currentRow] = buffer[currentCol];
-                        recordCondition = isWordValid(lineToValidate, currentRow, false);
-                        recordedSingleMoveHorizontaly = recordCondition;
-                    } else {
-                        recordCondition = true;
-                    }
-                } else {
-                    recordCondition = false;
-                }
-            } else {
-                if (!isHorizontal) {
-                    if (!node.isWord) {
-                        char[] lineToValidate = horiLines[currentRow].clone();
-                        lineToValidate[currentCol] = buffer[currentRow];
-                        recordCondition = isWordValid(lineToValidate, currentCol, false);
-                        recordedSingleMoveHorizontaly = recordCondition;
-                    } else {
-                        recordCondition = true;
-                    }
-                } else {
-                    recordCondition = false;
-                }
-            }
-        } else {
-            recordCondition = node.isWord;
-        }
+        boolean p = this.rack.length - limit == 1;
+        boolean w = node.isWord;
+        boolean h = isHorizontal;
+        boolean f;
+        boolean r = recordedSingleMoveHorizontaly;
+
+        char[] line = isHorizontal ? vertLines[currentCol] : horiLines[currentRow];
+        int otherDepth = isHorizontal ? currentRow : currentCol;
+        f = isWordValid(line, otherDepth, false);
+
+        boolean recordCondition = (w && h) || (w && !p) || (p && !h && !r && w) || (p && f && !r && !w)
+                || (p && f && !r && !h);
+
         if (recordCondition)
             recordMove(buffer, placed, isHorizontal);
 

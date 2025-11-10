@@ -247,14 +247,8 @@ public class LegalMoveIteratorTest {
         List<Move> moves = new ArrayList<>();
         while (newIterator.hasNext()) {
             Move move = newIterator.next();
-            if (!moveValidator.isValid(playerView.getBoard(), move)) {
-                System.out.println("hej");
-            }
             assertTrue(moveValidator.isValid(playerView.getBoard(), move),
                     "Invalid move: " + move);
-            if (moves.contains(move)) {
-                System.out.println("hej");
-            }
             assertFalse(moves.contains(move));
             moves.add(move);
         }
@@ -300,17 +294,103 @@ public class LegalMoveIteratorTest {
         List<Move> moves = new ArrayList<>();
         while (newIterator.hasNext()) {
             Move move = newIterator.next();
-            if (!moveValidator.isValid(playerView.getBoard(), move)) {
-                System.out.println("Debug");
-            }
             assertTrue(moveValidator.isValid(playerView.getBoard(), move),
                     "Invalid move: " + move);
-            if (moves.contains(move)) {
-                System.out.println("Debug");
-            }
             assertFalse(moves.contains(move));
             moves.add(move);
         }
         assertEquals(11, moves.size());
+    }
+
+    @Test
+    void testBuildCloseToEdges() {
+        String boardString = "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                ".CRABBLES......" +
+                "......SCRABBLE." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "...............";
+        //////// 0123456789
+        boardString = boardString.replace('.', GameConstants.EMPTY_SQUARE);
+
+        String bagToFirstMove = "XORANDIFELSE/S/AD/100/100";
+        String gameString = boardString + "/" + bagToFirstMove;
+
+        GameState gameState = GameState.stateFrom(gameString);
+        PlayerView playerView = PlayerView.fromGameState(gameState, 0);
+
+        // Create a simple dictionary containing a single word
+        List<String> words = new ArrayList<>();
+        words.add("SCRABBLES");
+        TrieDictionary dictionary = new TrieDictionary(words);
+
+        LegalMoveIterator newIterator = new LegalMoveIterator(playerView, dictionary);
+        MoveValidator moveValidator = new MoveValidator(dictionary);
+
+        List<Move> moves = new ArrayList<>();
+        while (newIterator.hasNext()) {
+            Move move = newIterator.next();
+            assertTrue(moveValidator.isValid(playerView.getBoard(), move),
+                    "Invalid move: " + move);
+            assertFalse(moves.contains(move));
+            moves.add(move);
+        }
+        assertEquals(2, moves.size());
+    }
+
+    @Test
+    void testBuildCloseToCorner() {
+        String boardString = ".XX.........XX." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............." +
+                "..............X" +
+                "..............X" +
+                ".XX............";
+        //////// 0123456789
+        boardString = boardString.replace('.', GameConstants.EMPTY_SQUARE);
+
+        String bagToFirstMove = "XORANDIFELSE/A/AD/100/100";
+        String gameString = boardString + "/" + bagToFirstMove;
+
+        GameState gameState = GameState.stateFrom(gameString);
+        PlayerView playerView = PlayerView.fromGameState(gameState, 0);
+
+        // Create a simple dictionary containing a single word
+        List<String> words = new ArrayList<>();
+        words.add("XX");
+        words.add("XXA");
+        words.add("AXX");
+        TrieDictionary dictionary = new TrieDictionary(words);
+
+        LegalMoveIterator newIterator = new LegalMoveIterator(playerView, dictionary);
+        MoveValidator moveValidator = new MoveValidator(dictionary);
+
+        List<Move> moves = new ArrayList<>();
+        while (newIterator.hasNext()) {
+            Move move = newIterator.next();
+            assertTrue(moveValidator.isValid(playerView.getBoard(), move),
+                    "Invalid move: " + move);
+            assertFalse(moves.contains(move));
+            moves.add(move);
+        }
+        assertEquals(8, moves.size());
     }
 }

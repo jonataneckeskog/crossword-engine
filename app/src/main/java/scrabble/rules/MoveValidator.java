@@ -61,12 +61,13 @@ public final class MoveValidator {
             }
         }
 
-        for (char[] line : rows) {
-            if (!isLineValid(line, dictionary))
+        for (Position position : positions) {
+            int row = position.row();
+            int column = position.column();
+
+            if (!isLineValid(rows[row], dictionary))
                 return false;
-        }
-        for (char[] line : columns) {
-            if (!isLineValid(line, dictionary))
+            if (!isLineValid(columns[column], dictionary))
                 return false;
         }
 

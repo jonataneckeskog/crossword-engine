@@ -233,11 +233,8 @@ public class LegalMoveIterator implements Iterator<Move> {
 
     private void buildWord(TrieNode node, char[] rack, char[] buffer, boolean[] placed, int depth, int limit,
             boolean isHorizontal) {
-        if (depth >= BoardConstants.SIZE)
-            return;
-
         // If the square is full, just continue
-        if (buffer[depth] != GameConstants.EMPTY_SQUARE) {
+        if (depth < BoardConstants.SIZE && buffer[depth] != GameConstants.EMPTY_SQUARE) {
             Optional<TrieNode> child = node.getChild(buffer[depth]);
             if (child.isEmpty())
                 return;
@@ -281,6 +278,9 @@ public class LegalMoveIterator implements Iterator<Move> {
         }
         if (recordCondition)
             recordMove(buffer, placed, isHorizontal);
+
+        if (depth >= BoardConstants.SIZE)
+            return;
 
         if (limit == 0)
             return;
